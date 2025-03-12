@@ -1,0 +1,83 @@
+products-management-system/
+├── src/
+│   ├── main/
+│   │   ├── java/
+│   │   │   └── com/
+│   │   │       └── pms/
+│   │   │           ├── ProductsManagementSystemApplication.java
+│   │   │           ├── config/
+│   │   │           │   ├── SecurityConfig.java
+│   │   │           │   ├── AuditConfig.java
+│   │   │           │   ├── SwaggerConfig.java
+│   │   │           │   └── WebConfig.java
+│   │   │           ├── model/
+│   │   │           │   ├── entity/
+│   │   │           │   │   ├── User.java
+│   │   │           │   │   ├── Role.java
+│   │   │           │   │   ├── Permission.java
+│   │   │           │   │   ├── Product.java
+│   │   │           │   │   ├── Category.java
+│   │   │           │   │   ├── Warehouse.java
+│   │   │           │   │   ├── Order.java
+│   │   │           │   │   ├── OrderItem.java
+│   │   │           │   │   ├── Invoice.java
+│   │   │           │   │   ├── Payment.java
+│   │   │           │   │   ├── StockMovement.java
+│   │   │           │   │   └── Address.java
+│   │   │           │   ├── enums/
+│   │   │           │   │   ├── OrderStatus.java
+│   │   │           │   │   ├── PaymentStatus.java
+│   │   │           │   │   ├── PaymentMethod.java
+│   │   │           │   │   └── MovementStatus.java
+│   │   │           │   └── dto/
+│   │   │           │       ├── request/
+│   │   │           │       │   ├── UserRequest.java
+│   │   │           │       │   ├── ProductRequest.java
+│   │   │           │       │   ├── OrderRequest.java
+│   │   │           │       │   ├── InvoiceRequest.java
+│   │   │           │       │   └── StockMovementRequest.java
+│   │   │           │       └── response/
+│   │   │           │           ├── UserResponse.java
+│   │   │           │           ├── ProductResponse.java
+│   │   │           │           ├── OrderResponse.java
+│   │   │           │           ├── InvoiceResponse.java
+│   │   │           │           └── StockMovementResponse.java
+│   │   │           ├── repository/
+│   │   │           │   ├── UserRepository.java
+│   │   │           │   ├── RoleRepository.java
+│   │   │           │   ├── PermissionRepository.java
+│   │   │           │   ├── ProductRepository.java
+│   │   │           │   ├── CategoryRepository.java
+│   │   │           │   ├── WarehouseRepository.java
+│   │   │           │   ├── OrderRepository.java
+│   │   │           │   ├── OrderItemRepository.java
+│   │   │           │   ├── InvoiceRepository.java
+│   │   │           │   ├── PaymentRepository.java
+│   │   │           │   └── StockMovementRepository.java
+│   │   │           ├── service/
+│   │   │           │   ├── interfaces/
+│   │   │           │   │   ├── UserService.java
+│   │   │           │   │   ├── ProductService.java
+│   │   │           │   │   ├── WarehouseService.java
+│   │   │           │   │   ├── OrderService.java
+│   │   │           │   │   ├── InvoiceService.java
+│   │   │           │   │   └── StockMovementService.java
+│   │   │           │   └── impl/
+│   │   │           │       ├── UserServiceImpl.java
+│   │   │           │       ├── ProductServiceImpl.java
+│   │   │           │       ├── WarehouseServiceImpl.java
+│   │   │           │       ├── OrderServiceImpl.java
+│   │   │           │       ├── InvoiceServiceImpl.java
+│   │   │           │       └── StockMovementServiceImpl.java
+│   │   │           ├── controller/
+│   │   │           │   ├── UserController.java
+│   │   │           │   ├── ProductController.java
+│   │   │           │   ├── WarehouseController.java
+│   │   │           │   ├── OrderController.java
+│   │   │           │   ├── InvoiceController.java
+│   │   │           │   └── StockMovementController.java
+│   │   │           ├── security/
+│   │   │           │   ├── JwtTokenProvider.java
+│   │   │           │   ├── JwtAuthenticationFilter.java
+│   │   │           │   ├── UserDetailsServiceImpl.java
+│   │   │           │   └── PermissionEva
