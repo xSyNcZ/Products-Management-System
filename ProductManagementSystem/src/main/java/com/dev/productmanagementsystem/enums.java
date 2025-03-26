@@ -1,4 +1,4 @@
-package com.pms.model.enums;
+package com.dev.productmanagementsystem;
 
 public enum OrderStatus {
     PENDING,
@@ -8,7 +8,7 @@ public enum OrderStatus {
     CANCELLED
 }
 
-package com.pms.model.enums;
+package com.dev.productmanagementsystem;
 
 public enum PaymentStatus {
     PENDING,
@@ -18,7 +18,7 @@ public enum PaymentStatus {
     CANCELLED
 }
 
-package com.pms.model.enums;
+package com.dev.productmanagementsystem;
 
 public enum PaymentMethod {
     CREDIT_CARD,

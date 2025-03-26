@@ -1,3 +1,5 @@
+package com.dev.productmanagementsystem;
+
 import javax.persistence.*;
 import java.time.LocalDateTime;
 

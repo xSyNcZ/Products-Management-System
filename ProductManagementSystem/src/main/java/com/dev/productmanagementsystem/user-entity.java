@@ -1,3 +1,5 @@
+package com.dev.productmanagementsystem;
+
 package com.pms.model.entity;
 
 import jakarta.persistence.*;
