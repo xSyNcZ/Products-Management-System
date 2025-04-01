@@ -31,7 +31,7 @@ public class StockMovement {
     // Constructors
     public StockMovement() {}
 
-    public StockMovement(Product product, Warehouse warehouse, MovementStatus movementStatus, 
+    public StockMovement(Product product, Warehouse warehouse, MovementStatus movementStatus,
                          Double quantity, LocalDateTime movementDate) {
         this.product = product;
         this.warehouse = warehouse;
