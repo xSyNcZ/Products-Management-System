@@ -1,7 +1,7 @@
 package com.dev.productmanagementsystem;
 
+import javax.persistence.*;
 import java.util.Set;
-import jakarta.persistence.*;
 
 @Entity
 @Table(name = "permissions")
@@ -29,4 +29,3 @@ public class Permission {
     public Set<Role> getRoles() { return roles; }
     public void setRoles(Set<Role> roles) { this.roles = roles; }
 }
-
