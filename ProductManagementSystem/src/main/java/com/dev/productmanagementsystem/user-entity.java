@@ -1,8 +1,6 @@
 package com.dev.productmanagementsystem;
 
-package com.pms.model.entity;
-
-import jakarta.persistence.*;
+import javax.persistence.*;
 import java.util.List;
 import java.util.Set;
 

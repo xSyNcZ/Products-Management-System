@@ -1,14 +1,26 @@
 AFTER TASK IS DONE PUT A "+" INSTEAD OF "-"\
 TODO:
+<<<<<<< Updated upstream
 -Create Placeholders for each class
 -Move existing classes to corresponding placeholders
 -Refactor the code so it doesn't create any errors
 -update dependencies
 -update application.properties
+=======
++Create Placeholders for each class
++Move existing classes to corresponding placeholders
++Refactor the code so it doesn't create any errors
++update dependencies
++update and fix application.properties (may have an issue with critical data so currently ignore this)
+-add gitignore for application.properties
+-add DTOs
+-add Repositories
+>>>>>>> Stashed changes
 -Verify the code whether it has everything that has been declared in the class diagram
 -Check what's going on with these enums(and whether are they necessary)
 -Make necessary updates to the classes creating all the methods that are needed according to the diagram
 -Make each and every function work (at least in theory)
 -Check for errors and fix them
+-delete unused imports
 ?(Optional)Make provisional frontend in order to check whether all the things work
 -Update !TODO

@@ -1,6 +1,6 @@
 package com.dev.productmanagementsystem;
 
-import jakarta.persistence.*;
+import javax.persistence.*;
 import java.util.Set;
 
 @Entity
@@ -39,6 +39,7 @@ public class Role {
 
     public Set<User> getUsers() { return users; }
     public void setUsers(Set<User> users) { this.users = users; }
+<<<<<<< Updated upstream:ProductManagementSystem/src/main/java/com/dev/productmanagementsystem/role-permission-entities.java
 }
 
 @Entity
@@ -67,3 +68,6 @@ public class Permission {
     public Set<Role> getRoles() { return roles; }
     public void setRoles(Set<Role> roles) { this.roles = roles; }
 }
+=======
+}
+>>>>>>> Stashed changes:ProductManagementSystem/src/main/java/com/dev/productmanagementsystem/Role.java

@@ -1,6 +1,9 @@
 package com.dev.productmanagementsystem;
 
-import jakarta.persistence.*;
+import com.dev.productmanagementsystem.PaymentMethod;
+import com.dev.productmanagementsystem.PaymentStatus;
+
+import javax.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
