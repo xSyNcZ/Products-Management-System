@@ -2,12 +2,15 @@ AFTER TASK IS DONE PUT A "+" INSTEAD OF "-"\
 TODO:
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 -Create Placeholders for each class
 -Move existing classes to corresponding placeholders
 -Refactor the code so it doesn't create any errors
 -update dependencies
 -update application.properties
 =======
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 +Create Placeholders for each class
@@ -19,6 +22,9 @@ TODO:
 -add DTOs
 -add Repositories
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
