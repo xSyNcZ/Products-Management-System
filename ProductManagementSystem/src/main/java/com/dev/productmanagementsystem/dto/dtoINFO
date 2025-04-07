@@ -1,0 +1,6 @@
++   utworzono podstawowe DTO dla wszystkich encji
++   dodano walidację tam gdzie konieczne np UserCreateDTO
++   utworzono DTO podsumowujące do obsługi odniesień cyklicznych
++   zaimplementowano klasę narzędziową do mapowania między encjami DTO, inaczej konwersja danych
+    z obiektów encji (mapowanych na tabele w bazie danych) na obiekty DTO służących do transferu danych
+    między warstwami aplikacji
