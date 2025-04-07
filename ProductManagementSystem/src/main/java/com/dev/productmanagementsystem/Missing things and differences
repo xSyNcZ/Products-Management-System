@@ -1,0 +1,193 @@
+1.) Order class:
+    missing -> String orderNumber,
+               User salesManager,
+               LocalDateTime shippingDate,
+               LocalDateTime deliveryDate,
+               Address shippingAddress,
+               Address billingAddress,
+               BigDecimal totalAmount,
+               addItem(OrderItem),
+               removeItem(OrderItem),
+               getOrderNumber(), setOrderNumber(...),
+               getShippingDate() / setShippingDate(...),
+               getDeliveryDate() / setDeliveryDate(...),
+               getShippingAddress() / setShippingAddress(...),
+               getBillingAddress() / setBillingAddress(...),
+               getTotalAmount()
+
+
+    different - > User user,
+                  OrderStatus orderStatus,
+                  List<OrderItem> orderItems,
+
+
+
+
+2.) Address class:
+    missing -> String phoneNumber,
+
+    different -> String street
+
+3.) Category class:
+    missing -> Category parent,
+               Set<Category> subCategories
+
+    different -> none
+
+4.) Invoice class:
+    missing -> String invoiceNumber,
+               User accountant,
+               LocalDateTime issueDate,
+               LocalDateTime dueDate,
+               BigDecimal tax,
+               PaymentStatus paymentStatus,
+               Set<Payment> payments (no relation to many payments -one to one)
+               addPayment(Payment) (method),
+               getRemainingAmount() (method)
+
+    different -> issueDate,
+                 invoiceDate
+
+5.) MovementStatus enum class:
+    missing -> PLANNED,
+               IN_PROGRESS,
+               COMPLETED
+
+    different -> none
+
+6.) OrderItem class:
+    missing -> getTotalPrice(),
+
+    different ->BigDecimal unitPrice
+
+7.) OrderStatus enum class:
+    missing -> APPROVED
+
+    different -> none
+
+8.) Payment class:
+    missing -> String transactionId,
+               String notes
+
+    different -> PaymentMethod paymentMethod
+
+9.) PaymentStatus enum class:
+    missing -> PARTIAL,
+               OVERDUE
+
+    different -> none
+
+10.) PaymentMethod enum class:
+     missing -> CHECK,
+                OTHER
+
+     different -> none
+
+11.) Permission class:
+     missing -> String description,
+
+     different -> none
+
+12.) Product class:
+     missing -> String sku,
+     Map<Warehouse, Integer> stockQuantities,
+     LocalDateTime createdAt,
+     LocalDateTime updatedAt,
+
+     different -> double price
+
+13.) Role class:
+     missing - > String description,
+                 void addPermission(Permission),
+                 void removePermission(Permission)
+
+     different -> Long id,
+                  String name,
+                  Set<Permission> permissions,
+                  Long getId(),
+                  String getName(),
+                  void setName(String),
+                  Set<Permission> getPermissions(),
+                  void setPermissions(Set<Permission>)
+
+14.) StockMovement class:
+     missing ->Warehouse sourceWarehouse,
+               Warehouse destinationWarehouse,
+               Integer quantity (w kodzie jest Double quantity),
+               User initiatedBy,
+               String notes,
+                Warehouse getSourceWarehouse(),
+                void setSourceWarehouse(Warehouse),
+                Warehouse getDestinationWarehouse(),
+                void setDestinationWarehouse(Warehouse),
+                Integer getQuantity(),
+                void setQuantity(Integer),
+                User getInitiatedBy(),
+                void setInitiatedBy(User),
+                String getNotes()
+
+                void setNotes(String)
+    different -> Long id,
+                 Product product,
+                 LocalDateTime movementDate,
+                 MovementStatus status,
+                Long getId(),
+                Product getProduct(),
+                void setProduct(Product),
+                LocalDateTime getMovementDate(),
+                MovementStatus getStatus(),
+                void setStatus(MovementStatus)
+
+15.) User class:
+    missing -> Role role,
+               boolean activ,
+               LocalDateTime createdAt,
+               LocalDateTime updatedAt,
+               Role getRole(),
+               void setRole(Role),
+               boolean isActive(),
+               void setActive(boolean),
+               LocalDateTime getCreatedAt(),
+               LocalDateTime getUpdatedAt()
+
+    different -> Long id,
+                 String username,
+                 String email,
+                 String password,
+                 String firstName,
+                 String lastName,
+                Long getId(),
+                String getUsername(),
+                void setUsername(String),
+                String getEmail(),
+                void setEmail(String),
+                String getPassword(),
+                void setPassword(String),
+                String getFirstName(),
+                void setFirstName(String),
+                String getLastName(),
+                void setLastName(String)
+
+16.) Warehouse class:
+     missing ->String address,
+               Double capacity,
+               User manager,
+               Set<User> workers,
+               String getAddress(),
+               void setAddress(String),
+               Double getCapacity(),
+               void setCapacity(Double),
+               User getManager(),
+               void setManager(User),
+               Set<User> getWorkers(),
+               void addWorker(User),
+               void removeWorker(User)
+
+     different -> Long id,
+                  String name,
+                  String location,
+                  Long getId(),
+                  String getName(),
+                  void setName(String),
+                  String getLocation(),
+                  void setLocation(String)
