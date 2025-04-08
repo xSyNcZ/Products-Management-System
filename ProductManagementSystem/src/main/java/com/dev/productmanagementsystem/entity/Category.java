@@ -1,4 +1,4 @@
-package com.dev.productmanagementsystem;
+package com.dev.productmanagementsystem.entity;
 
 import javax.persistence.*;
 import java.util.HashSet;

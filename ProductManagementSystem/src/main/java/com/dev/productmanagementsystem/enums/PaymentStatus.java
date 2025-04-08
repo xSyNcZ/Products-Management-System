@@ -1,4 +1,4 @@
-package com.dev.productmanagementsystem;
+package com.dev.productmanagementsystem.enums;
 
 public enum PaymentStatus {
     PENDING,

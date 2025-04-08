@@ -1,4 +1,7 @@
-package com.dev.productmanagementsystem;
+package com.dev.productmanagementsystem.entity;
+
+import com.dev.productmanagementsystem.enums.PaymentMethod;
+import com.dev.productmanagementsystem.enums.PaymentStatus;
 
 import javax.persistence.*;
 import java.math.BigDecimal;

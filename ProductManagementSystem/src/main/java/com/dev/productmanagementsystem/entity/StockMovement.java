@@ -1,4 +1,6 @@
-package com.dev.productmanagementsystem;
+package com.dev.productmanagementsystem.entity;
+
+import com.dev.productmanagementsystem.enums.MovementStatus;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
