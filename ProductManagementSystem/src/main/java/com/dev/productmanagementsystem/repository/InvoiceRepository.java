@@ -1,6 +1,6 @@
 package com.dev.productmanagementsystem.repository;
 
-import com.dev.productmanagementsystem.entity.Invoice;
+import com.dev.productmanagementsystem.entities.Invoice;
 import com.dev.productmanagementsystem.enums.PaymentStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

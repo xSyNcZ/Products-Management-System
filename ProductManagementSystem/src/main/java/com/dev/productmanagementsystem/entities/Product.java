@@ -1,4 +1,4 @@
-package com.dev.productmanagementsystem.entity;
+package com.dev.productmanagementsystem.entities;
 
 import javax.persistence.*;
 import java.math.BigDecimal;

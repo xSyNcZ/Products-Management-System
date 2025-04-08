@@ -1,6 +1,6 @@
 package com.dev.productmanagementsystem.repository;
 
-import com.dev.productmanagementsystem.entity.Address;
+import com.dev.productmanagementsystem.entities.Address;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

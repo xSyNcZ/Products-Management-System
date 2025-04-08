@@ -1,6 +1,6 @@
 package com.dev.productmanagementsystem.repository;
 
-import com.dev.productmanagementsystem.entity.Order;
+import com.dev.productmanagementsystem.entities.Order;
 import com.dev.productmanagementsystem.enums.OrderStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

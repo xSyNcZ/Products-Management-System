@@ -1,6 +1,6 @@
 package com.dev.productmanagementsystem.repository;
 
-import com.dev.productmanagementsystem.entity.Permission;
+import com.dev.productmanagementsystem.entities.Permission;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

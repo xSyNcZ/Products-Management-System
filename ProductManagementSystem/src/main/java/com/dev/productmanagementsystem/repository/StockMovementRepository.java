@@ -1,6 +1,6 @@
 package com.dev.productmanagementsystem.repository;
 
-import com.dev.productmanagementsystem.entity.StockMovement;
+import com.dev.productmanagementsystem.entities.StockMovement;
 import com.dev.productmanagementsystem.enums.MovementStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
