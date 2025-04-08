@@ -1,6 +1,7 @@
 package com.dev.productmanagementsystem;
 
 import javax.persistence.*;
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
@@ -19,7 +20,7 @@ public class Role {
             joinColumns = @JoinColumn(name = "role_id"),
             inverseJoinColumns = @JoinColumn(name = "permission_id")
     )
-    private Set<Permission> permissions;
+    private Set<Permission> permissions = new HashSet<>();
 
     @ManyToMany(mappedBy = "roles")
     private Set<User> users;
@@ -39,4 +40,13 @@ public class Role {
 
     public Set<User> getUsers() { return users; }
     public void setUsers(Set<User> users) { this.users = users; }
+
+    // Additional methods
+    public void addPermission(Permission permission) {
+        permissions.add(permission);
+    }
+
+    public void removePermission(Permission permission) {
+        permissions.remove(permission);
+    }
 }

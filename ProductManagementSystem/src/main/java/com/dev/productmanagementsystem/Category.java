@@ -1,6 +1,7 @@
 package com.dev.productmanagementsystem;
 
 import javax.persistence.*;
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
@@ -15,6 +16,13 @@ public class Category {
 
     @Column(name = "description")
     private String description;
+
+    @ManyToOne
+    @JoinColumn(name = "parent_id")
+    private Category parent;
+
+    @OneToMany(mappedBy = "parent")
+    private Set<Category> subCategories = new HashSet<>();
 
     @OneToMany(mappedBy = "category")
     private Set<Product> products;
@@ -52,11 +60,38 @@ public class Category {
         this.description = description;
     }
 
+    public Category getParent() {
+        return parent;
+    }
+
+    public void setParent(Category parent) {
+        this.parent = parent;
+    }
+
+    public Set<Category> getSubCategories() {
+        return subCategories;
+    }
+
+    public void setSubCategories(Set<Category> subCategories) {
+        this.subCategories = subCategories;
+    }
+
     public Set<Product> getProducts() {
         return products;
     }
 
     public void setProducts(Set<Product> products) {
         this.products = products;
+    }
+
+    // Additional methods
+    public void addSubCategory(Category category) {
+        subCategories.add(category);
+        category.setParent(this);
+    }
+
+    public void removeSubCategory(Category category) {
+        subCategories.remove(category);
+        category.setParent(null);
     }
 }

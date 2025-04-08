@@ -1,6 +1,7 @@
 package com.dev.productmanagementsystem;
 
 import javax.persistence.*;
+import java.util.Set;
 
 @Entity
 @Table(name = "addresses")
@@ -9,8 +10,8 @@ public class Address {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "street_address")
-    private String streetAddress;
+    @Column(name = "street")
+    private String street;
 
     @Column(name = "city")
     private String city;
@@ -24,8 +25,17 @@ public class Address {
     @Column(name = "country")
     private String country;
 
+    @Column(name = "phone_number")
+    private String phoneNumber;
+
     @OneToOne(mappedBy = "address")
     private User user;
+
+    @OneToMany(mappedBy = "shippingAddress")
+    private Set<Order> shippingOrders;
+
+    @OneToMany(mappedBy = "billingAddress")
+    private Set<Order> billingOrders;
 
     // Constructors
     public Address() {}
@@ -34,8 +44,8 @@ public class Address {
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
-    public String getStreetAddress() { return streetAddress; }
-    public void setStreetAddress(String streetAddress) { this.streetAddress = streetAddress; }
+    public String getStreet() { return street; }
+    public void setStreet(String street) { this.street = street; }
 
     public String getCity() { return city; }
     public void setCity(String city) { this.city = city; }
@@ -48,6 +58,9 @@ public class Address {
 
     public String getCountry() { return country; }
     public void setCountry(String country) { this.country = country; }
+
+    public String getPhoneNumber() { return phoneNumber; }
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
 
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }

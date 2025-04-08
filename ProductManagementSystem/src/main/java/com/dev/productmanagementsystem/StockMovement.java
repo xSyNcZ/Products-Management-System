@@ -15,30 +15,32 @@ public class StockMovement {
     private Product product;
 
     @ManyToOne
-    @JoinColumn(name = "warehouse_id")
-    private Warehouse warehouse;
+    @JoinColumn(name = "source_warehouse_id")
+    private Warehouse sourceWarehouse;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "movement_status")
-    private MovementStatus movementStatus;
+    @ManyToOne
+    @JoinColumn(name = "destination_warehouse_id")
+    private Warehouse destinationWarehouse;
 
     @Column(name = "quantity")
-    private Double quantity;
+    private Integer quantity;
+
+    @ManyToOne
+    @JoinColumn(name = "initiated_by_id")
+    private User initiatedBy;
 
     @Column(name = "movement_date")
     private LocalDateTime movementDate;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private MovementStatus status;
+
+    @Column(name = "notes")
+    private String notes;
+
     // Constructors
     public StockMovement() {}
-
-    public StockMovement(Product product, Warehouse warehouse, MovementStatus movementStatus,
-                         Double quantity, LocalDateTime movementDate) {
-        this.product = product;
-        this.warehouse = warehouse;
-        this.movementStatus = movementStatus;
-        this.quantity = quantity;
-        this.movementDate = movementDate;
-    }
 
     // Getters and Setters
     public Long getId() {
@@ -57,28 +59,36 @@ public class StockMovement {
         this.product = product;
     }
 
-    public Warehouse getWarehouse() {
-        return warehouse;
+    public Warehouse getSourceWarehouse() {
+        return sourceWarehouse;
     }
 
-    public void setWarehouse(Warehouse warehouse) {
-        this.warehouse = warehouse;
+    public void setSourceWarehouse(Warehouse sourceWarehouse) {
+        this.sourceWarehouse = sourceWarehouse;
     }
 
-    public MovementStatus getMovementStatus() {
-        return movementStatus;
+    public Warehouse getDestinationWarehouse() {
+        return destinationWarehouse;
     }
 
-    public void setMovementStatus(MovementStatus movementStatus) {
-        this.movementStatus = movementStatus;
+    public void setDestinationWarehouse(Warehouse destinationWarehouse) {
+        this.destinationWarehouse = destinationWarehouse;
     }
 
-    public Double getQuantity() {
+    public Integer getQuantity() {
         return quantity;
     }
 
-    public void setQuantity(Double quantity) {
+    public void setQuantity(Integer quantity) {
         this.quantity = quantity;
+    }
+
+    public User getInitiatedBy() {
+        return initiatedBy;
+    }
+
+    public void setInitiatedBy(User initiatedBy) {
+        this.initiatedBy = initiatedBy;
     }
 
     public LocalDateTime getMovementDate() {
@@ -87,5 +97,21 @@ public class StockMovement {
 
     public void setMovementDate(LocalDateTime movementDate) {
         this.movementDate = movementDate;
+    }
+
+    public MovementStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(MovementStatus status) {
+        this.status = status;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
     }
 }

@@ -1,6 +1,7 @@
 package com.dev.productmanagementsystem;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
@@ -15,10 +16,10 @@ public class User {
     private String username;
 
     @Column(nullable = false)
-    private String password;
+    private String email;
 
     @Column(nullable = false)
-    private String email;
+    private String password;
 
     @Column(name = "first_name")
     private String firstName;
@@ -26,49 +27,116 @@ public class User {
     @Column(name = "last_name")
     private String lastName;
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToOne
+    @JoinColumn(name = "role_id")
+    private Role role;
+
+    @Column(name = "active")
+    private boolean active;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @OneToMany(mappedBy = "customer")
+    private List<Order> customerOrders;
+
+    @OneToMany(mappedBy = "salesManager")
+    private List<Order> managedOrders;
+
+    @OneToMany(mappedBy = "manager")
+    private Set<Warehouse> managedWarehouses;
+
+    @ManyToMany
     @JoinTable(
-            name = "user_roles",
+            name = "warehouse_workers",
             joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "role_id")
+            inverseJoinColumns = @JoinColumn(name = "warehouse_id")
     )
-    private Set<Role> roles;
-
-    @OneToMany(mappedBy = "user")
-    private List<Order> orders;
-
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "address_id")
-    private Address address;
+    private Set<Warehouse> workplaces;
 
     // Constructors
     public User() {}
 
     // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getId() {
+        return id;
+    }
 
-    public String getUsername() { return username; }
-    public void setUsername(String username) { this.username = username; }
+    public String getUsername() {
+        return username;
+    }
 
-    public String getPassword() { return password; }
-    public void setPassword(String password) { this.password = password; }
+    public void setUsername(String username) {
+        this.username = username;
+    }
 
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
+    public String getEmail() {
+        return email;
+    }
 
-    public String getFirstName() { return firstName; }
-    public void setFirstName(String firstName) { this.firstName = firstName; }
+    public void setEmail(String email) {
+        this.email = email;
+    }
 
-    public String getLastName() { return lastName; }
-    public void setLastName(String lastName) { this.lastName = lastName; }
+    public String getPassword() {
+        return password;
+    }
 
-    public Set<Role> getRoles() { return roles; }
-    public void setRoles(Set<Role> roles) { this.roles = roles; }
+    public void setPassword(String password) {
+        this.password = password;
+    }
 
-    public List<Order> getOrders() { return orders; }
-    public void setOrders(List<Order> orders) { this.orders = orders; }
+    public String getFirstName() {
+        return firstName;
+    }
 
-    public Address getAddress() { return address; }
-    public void setAddress(Address address) { this.address = address; }
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }
