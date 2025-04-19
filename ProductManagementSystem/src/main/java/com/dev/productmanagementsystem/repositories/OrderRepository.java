@@ -1,4 +1,4 @@
-package com.dev.productmanagementsystem.repository;
+package com.dev.productmanagementsystem.repositories;
 
 import com.dev.productmanagementsystem.entities.Order;
 import com.dev.productmanagementsystem.enums.OrderStatus;

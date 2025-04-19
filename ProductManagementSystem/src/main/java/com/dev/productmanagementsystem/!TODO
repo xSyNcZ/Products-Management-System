@@ -12,14 +12,21 @@ TODO:
 +Make class updates
 +Make necessary updates to the classes creating all the methods that are needed according to the diagram
 +Check for errors and fix them (DTO)
-(+/-) add Repositories
--verify/add services
--verify/add controllers
--Make each and every function work (at least in theory)
++add Repositories
+-fix repositories
+-add services
+-verify services
+-fix services
+-!ask about the class diagram and services
+(+/-)verify/add controllers
+-think of any additional functionalities of the program and add ideas in the text file
+-implement the methods
+-Make each and every function work (at least in theory, kinda like a "fix" step)
 -update the folder structure
 -update diagram
 -delete unnecessary imports
 -fix the visual code presentation
 -fix gitignore
-?(Optional)Make provisional frontend in order to check whether all the things work
+AFTER 6.05.2025.
+-create frontend
 -Update !TODO
