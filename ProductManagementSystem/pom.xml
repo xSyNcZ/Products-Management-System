@@ -77,7 +77,7 @@
         <dependency>
             <groupId>org.hibernate</groupId>
             <artifactId>hibernate</artifactId>
-            <version>3.5.3-Final</version>
+            <version>3.5.3-Final</version> <!-- !TODO issue -->
         </dependency>
         <dependency>
             <groupId>org.hibernate</groupId>

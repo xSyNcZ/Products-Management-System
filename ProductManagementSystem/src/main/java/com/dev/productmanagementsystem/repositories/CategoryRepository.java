@@ -1,7 +1,7 @@
 package com.dev.productmanagementsystem.repositories;
 
-import com.dev.productmanagementsystem.entities.Category;
 import org.springframework.data.jpa.repository.JpaRepository;
+import com.dev.productmanagementsystem.entities.Category;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
@@ -26,6 +26,6 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
     boolean existsByName(String name);
 
     // Count subcategories for a parent category
-    @Query("SELECT COUNT(c) FROM Category c WHERE c.parent.id = ?1")
+    @Query("SELECT COUNT(c) FROM Category c WHERE c.parent.id = ?1")//!TODO - might be an issue
     Long countSubcategoriesByParentId(Long parentId);
 }
