@@ -19,7 +19,7 @@ TODO:
 -verify services
 -fix services
 -!ask about the class diagram and services ("do we have to put the services with methods and repositories into class diagram?")
-(+/-)verify/add controllers (verify whether we have them already or we have to implement them)
+(+/-)verify/add controllers (verify whether we have them already or we have to implement them)(i think they are needed for the frontend)
 -think of any additional functionalities of the program and add ideas in the text file
 -implement the methods
 -Make each and every function work (at least in theory, kinda like a "fix" step)
