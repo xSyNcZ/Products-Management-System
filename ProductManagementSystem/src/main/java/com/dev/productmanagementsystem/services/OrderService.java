@@ -4,6 +4,7 @@ import com.dev.productmanagementsystem.dto.OrderDTO;
 import com.dev.productmanagementsystem.dto.OrderItemDTO;
 import com.dev.productmanagementsystem.entities.*;
 import com.dev.productmanagementsystem.enums.OrderStatus;
+import com.dev.productmanagementsystem.exceptions.InvalidOperationException;
 import com.dev.productmanagementsystem.exceptions.InsufficientStockException;
 import com.dev.productmanagementsystem.exceptions.ResourceNotFoundException;
 import com.dev.productmanagementsystem.repositories.*;
@@ -166,6 +167,129 @@ public class OrderService {
         }
 
         orderRepository.deleteById(id);
+    }
+
+    public OrderDTO findByOrderNumber(String orderNumber) {
+        Order order = orderRepository.findByOrderNumber(orderNumber)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with number: " + orderNumber));
+        return convertToDTO(order);
+    }
+
+    public List<OrderDTO> getOrdersBetweenDates(LocalDateTime startDate, LocalDateTime endDate) {
+        return orderRepository.findByOrderDateBetween(startDate, endDate).stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public OrderDTO cancelOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+
+        // Only allow cancellation of PENDING and CONFIRMED orders
+        if (order.getStatus() != OrderStatus.PENDING && order.getStatus() != OrderStatus.CONFIRMED) {
+            throw new InvalidOperationException("Cannot cancel order with status: " + order.getStatus());
+        }
+
+        // If order was confirmed, release the stock
+        if (order.getStatus() == OrderStatus.CONFIRMED) {
+            releaseStock(order);
+        }
+
+        order.setStatus(OrderStatus.CANCELLED);
+        Order updatedOrder = orderRepository.save(order);
+        return convertToDTO(updatedOrder);
+    }
+
+    @Transactional
+    public OrderDTO addOrderItem(Long orderId, OrderItemDTO orderItemDTO) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+
+        // Can only add items to pending orders
+        if (order.getStatus() != OrderStatus.PENDING) {
+            throw new InvalidOperationException("Cannot add items to order with status: " + order.getStatus());
+        }
+
+        Product product = productRepository.findById(orderItemDTO.getProductId())
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + orderItemDTO.getProductId()));
+
+        // Find the best warehouse with enough stock
+        Warehouse sourceWarehouse = findBestWarehouse(product, orderItemDTO.getQuantity());
+        if (sourceWarehouse == null) {
+            throw new InsufficientStockException("Insufficient stock for product: " + product.getName());
+        }
+
+        OrderItem orderItem = new OrderItem();
+        orderItem.setOrder(order);
+        orderItem.setProduct(product);
+        orderItem.setQuantity(orderItemDTO.getQuantity());
+        orderItem.setPricePerUnit(product.getPrice());
+        orderItem.setSourceWarehouse(sourceWarehouse);
+
+        orderItemRepository.save(orderItem);
+        order.addItem(orderItem);
+
+        // Update total amount
+        BigDecimal totalAmount = order.getTotalAmount().add(orderItem.getTotalPrice());
+        order.setTotalAmount(totalAmount);
+
+        Order updatedOrder = orderRepository.save(order);
+        return convertToDTO(updatedOrder);
+    }
+
+    @Transactional
+    public OrderDTO removeOrderItem(Long orderId, Long orderItemId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+
+        // Can only remove items from pending orders
+        if (order.getStatus() != OrderStatus.PENDING) {
+            throw new InvalidOperationException("Cannot remove items from order with status: " + order.getStatus());
+        }
+
+        OrderItem orderItem = orderItemRepository.findById(orderItemId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order item not found with id: " + orderItemId));
+
+        // Check if item belongs to the order
+        if (!orderItem.getOrder().getId().equals(orderId)) {
+            throw new InvalidOperationException("Order item does not belong to this order");
+        }
+
+        // Update total amount
+        BigDecimal totalAmount = order.getTotalAmount().subtract(orderItem.getTotalPrice());
+        order.setTotalAmount(totalAmount);
+
+        // Remove item from order and delete it
+        order.removeItem(orderItem);
+        orderItemRepository.delete(orderItem);
+
+        Order updatedOrder = orderRepository.save(order);
+        return convertToDTO(updatedOrder);
+    }
+
+    /**
+     * Get orders requiring shipment (confirmed but not shipped)
+     * @return List of orders to be shipped
+     */
+    public List<OrderDTO> getOrdersToShip() {
+        return orderRepository.findByStatus(OrderStatus.CONFIRMED).stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get customer order history with pagination
+     * @param customerId The customer ID
+     * @param page Page number (0-indexed)
+     * @param size Page size
+     * @return Page of customer orders
+     */
+    public Page<OrderDTO> getCustomerOrderHistory(Long customerId, int page, int size) {
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by("orderDate").descending());
+        Page<Order> orderPage = orderRepository.findByCustomerId(customerId, pageRequest);
+
+        return orderPage.map(this::convertToDTO);
     }
 
     private String generateOrderNumber() {

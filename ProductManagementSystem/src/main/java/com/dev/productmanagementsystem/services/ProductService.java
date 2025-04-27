@@ -58,6 +58,62 @@ public class ProductService {
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
+    
+    public List<ProductDTO> findByNameContaining(String name) {
+        return productRepository.findByNameContainingIgnoreCase(name).stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public ProductDTO findBySku(String sku) {
+        Product product = productRepository.findBySku(sku)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with SKU: " + sku));
+        return convertToDTO(product);
+    }
+
+    @Transactional
+    public ProductDTO transferStock(Long productId, Long sourceWarehouseId, Long destinationWarehouseId, Integer quantity) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + productId));
+
+        Warehouse sourceWarehouse = warehouseRepository.findById(sourceWarehouseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Source warehouse not found with id: " + sourceWarehouseId));
+
+        Warehouse destinationWarehouse = warehouseRepository.findById(destinationWarehouseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Destination warehouse not found with id: " + destinationWarehouseId));
+
+        // Check if there's enough stock in source warehouse
+        Integer currentStock = product.getStockQuantities().getOrDefault(sourceWarehouse, 0);
+        if (currentStock < quantity) {
+            throw new InsufficientStockException("Insufficient stock in source warehouse. Available: " + currentStock + ", Requested: " + quantity);
+        }
+
+        // Update source warehouse stock
+        product.updateStock(sourceWarehouse, currentStock - quantity);
+
+        // Update destination warehouse stock
+        Integer destinationStock = product.getStockQuantities().getOrDefault(destinationWarehouse, 0);
+        product.updateStock(destinationWarehouse, destinationStock + quantity);
+
+        Product updatedProduct = productRepository.save(product);
+        return convertToDTO(updatedProduct);
+    }
+
+    public boolean isStockBelowThreshold(Long productId, int threshold) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + productId));
+        return product.getTotalStock() < threshold;
+    }
+
+    public Integer getStockInWarehouse(Long productId, Long warehouseId) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + productId));
+
+        Warehouse warehouse = warehouseRepository.findById(warehouseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found with id: " + warehouseId));
+
+        return product.getStockQuantities().getOrDefault(warehouse, 0);
+    }
 
     @Transactional
     public ProductDTO createProduct(ProductDTO productDTO) {

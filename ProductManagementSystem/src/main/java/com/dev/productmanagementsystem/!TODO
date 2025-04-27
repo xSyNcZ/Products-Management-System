@@ -15,7 +15,7 @@ TODO:
 +add Repositories
 +fix repositories (!MIGHT CAUSE AN ISSUE!)
 -fix issue with dependencies (ask the Lecturer about this)
--add services
++add services
 -verify services
 -fix services
 -!ask about the class diagram and services ("do we have to put the services with methods and repositories into class diagram?")
