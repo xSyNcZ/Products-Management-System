@@ -4,5 +4,6 @@ public enum MovementStatus {
     PLANNED,
     IN_PROGRESS,
     COMPLETED,
-    CANCELLED
+    CANCELLED,
+    PENDING
 }

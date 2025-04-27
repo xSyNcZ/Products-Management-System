@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface StockMovementRepository extends JpaRepository<StockMovement, Long> {
@@ -32,6 +33,9 @@ public interface StockMovementRepository extends JpaRepository<StockMovement, Lo
     // Find recent movements
     List<StockMovement> findTop10ByOrderByMovementDateDesc();
 
+    // Find movements for either source or destination warehouse
+    List<StockMovement> findBySourceWarehouseIdOrDestinationWarehouseId(Long sourceWarehouseId, Long destinationWarehouseId);
+
     // Find movements for both source and destination warehouse
     @Query("SELECT sm FROM StockMovement sm WHERE sm.sourceWarehouse.id = ?1 OR sm.destinationWarehouse.id = ?1")
     List<StockMovement> findByWarehouseId(Long warehouseId);
@@ -42,4 +46,5 @@ public interface StockMovementRepository extends JpaRepository<StockMovement, Lo
     // Count movements by status
     @Query("SELECT COUNT(sm) FROM StockMovement sm WHERE sm.status = ?1")
     Long countByStatus(MovementStatus status);
+
 }

@@ -28,47 +28,22 @@ public class OrderItemService {
         this.warehouseService = warehouseService;
     }
 
-    /**
-     * Find an order item by its ID
-     * @param id The order item ID
-     * @return Optional containing the order item if found
-     */
     public Optional<OrderItem> findById(Long id) {
         return orderItemRepository.findById(id);
     }
 
-    /**
-     * Get all order items
-     * @return List of all order items
-     */
     public List<OrderItem> findAll() {
         return orderItemRepository.findAll();
     }
 
-    /**
-     * Get all order items for a specific order
-     * @param orderId The order ID
-     * @return List of order items belonging to the specified order
-     */
     public List<OrderItem> findByOrderId(Long orderId) {
         return orderItemRepository.findByOrderId(orderId);
     }
 
-    /**
-     * Save an order item
-     * @param orderItem The order item to save
-     * @return The saved order item with its ID
-     */
     public OrderItem save(OrderItem orderItem) {
         return orderItemRepository.save(orderItem);
     }
 
-    /**
-     * Create a new order item with validated product and warehouse
-     * @param orderItem The order item to create
-     * @return The created order item
-     * @throws IllegalArgumentException if product or warehouse doesn't exist or product not available in warehouse
-     */
     @Transactional
     public OrderItem createOrderItem(OrderItem orderItem) {
         // Validate product exists
@@ -98,13 +73,6 @@ public class OrderItemService {
         return orderItemRepository.save(orderItem);
     }
 
-    /**
-     * Update an existing order item
-     * @param id The ID of the order item to update
-     * @param orderItemDetails The updated order item details
-     * @return The updated order item
-     * @throws IllegalArgumentException if order item not found
-     */
     @Transactional
     public OrderItem updateOrderItem(Long id, OrderItem orderItemDetails) {
         OrderItem existingOrderItem = orderItemRepository.findById(id)
@@ -149,11 +117,6 @@ public class OrderItemService {
         return orderItemRepository.save(existingOrderItem);
     }
 
-    /**
-     * Delete an order item by its ID
-     * @param id The ID of the order item to delete
-     * @throws IllegalArgumentException if order item not found
-     */
     public void deleteOrderItem(Long id) {
         if (!orderItemRepository.existsById(id)) {
             throw new IllegalArgumentException("Order item not found");
@@ -161,23 +124,12 @@ public class OrderItemService {
         orderItemRepository.deleteById(id);
     }
 
-    /**
-     * Calculate the total price for an order item
-     * @param id The order item ID
-     * @return The total price (quantity * price per unit)
-     * @throws IllegalArgumentException if order item not found
-     */
     public BigDecimal calculateTotalPrice(Long id) {
         OrderItem orderItem = orderItemRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Order item not found"));
         return orderItem.getTotalPrice();
     }
 
-    /**
-     * Calculate the total value of all items in an order
-     * @param orderId The order ID
-     * @return The total value of all items in the order
-     */
     public BigDecimal calculateOrderTotal(Long orderId) {
         List<OrderItem> orderItems = orderItemRepository.findByOrderId(orderId);
         return orderItems.stream()
@@ -185,11 +137,6 @@ public class OrderItemService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    /**
-     * Reduce inventory stock when order items are confirmed
-     * @param orderId The order ID
-     * @throws IllegalArgumentException if insufficient stock for any item
-     */
     @Transactional
     public void allocateInventoryForOrder(Long orderId) {
         List<OrderItem> orderItems = orderItemRepository.findByOrderId(orderId);
@@ -203,10 +150,6 @@ public class OrderItemService {
         }
     }
 
-    /**
-     * Return inventory to stock when order is cancelled
-     * @param orderId The order ID
-     */
     @Transactional
     public void returnInventoryForCancelledOrder(Long orderId) {
         List<OrderItem> orderItems = orderItemRepository.findByOrderId(orderId);

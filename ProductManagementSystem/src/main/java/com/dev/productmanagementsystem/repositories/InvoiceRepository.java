@@ -31,6 +31,23 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     // Find invoices with total amount greater than specified amount
     List<Invoice> findByTotalAmountGreaterThan(BigDecimal amount);
 
+    // Find invoices by due date before a given date and payment status not equal to a given status
+    List<Invoice> findByDueDateBeforeAndPaymentStatusNot(LocalDateTime dueDate, PaymentStatus status);
+
+    // Find invoices by customer ID
+    List<Invoice> findByOrder_Customer_Id(Long customerId);
+
+    // Find invoices by due date between start and end dates
+    List<Invoice> findByDueDateBetween(LocalDateTime startDate, LocalDateTime endDate);
+
+    // Find invoices by due date between start and end dates and payment status not equal to a given status
+    List<Invoice> findByDueDateBetweenAndPaymentStatusNot(
+            LocalDateTime startDate, LocalDateTime endDate, PaymentStatus status);
+
+    // Find invoices by payment status and due date between start and end dates
+    List<Invoice> findByPaymentStatusAndDueDateBetween(
+            PaymentStatus status, LocalDateTime startDate, LocalDateTime endDate);
+
     // Find invoices for a specific customer using query
     @Query("SELECT i FROM Invoice i JOIN i.order o WHERE o.customer.id = ?1")
     List<Invoice> findByCustomerId(Long customerId);

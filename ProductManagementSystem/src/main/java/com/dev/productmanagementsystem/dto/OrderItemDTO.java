@@ -10,6 +10,7 @@ public class OrderItemDTO {
     private Integer quantity;
     private BigDecimal pricePerUnit;
     private Long sourceWarehouseId;
+    private String sourceWarehouseName;
 
     // Constructors
     public OrderItemDTO() {}
@@ -35,6 +36,9 @@ public class OrderItemDTO {
 
     public Long getSourceWarehouseId() { return sourceWarehouseId; }
     public void setSourceWarehouseId(Long sourceWarehouseId) { this.sourceWarehouseId = sourceWarehouseId; }
+
+    public String getSourceWarehouseName() { return sourceWarehouseName; }
+    public void setSourceWarehouseName(String sourceWarehouseName) { this.sourceWarehouseName = sourceWarehouseName; }
 
     // Additional methods
     public BigDecimal getTotalPrice() {

@@ -32,6 +32,13 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     // Find payments by amount greater than
     List<Payment> findByAmountGreaterThan(BigDecimal amount);
 
+    // Find payments by invoice ID and payment status
+    List<Payment> findByInvoiceIdAndPaymentStatus(Long invoiceId, PaymentStatus status);
+
+    // Find payments by status and between two dates
+    List<Payment> findByPaymentStatusAndPaymentDateBetween(
+            PaymentStatus status, LocalDateTime startDate, LocalDateTime endDate);
+
     // Sum total payments for an invoice
     @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.invoice.id = ?1")
     BigDecimal sumAmountByInvoiceId(Long invoiceId);

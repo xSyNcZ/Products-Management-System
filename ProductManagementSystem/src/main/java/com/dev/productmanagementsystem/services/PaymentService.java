@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -108,6 +109,58 @@ public class PaymentService {
         }
 
         invoiceRepository.save(invoice);
+    }
+
+    public Optional<Payment> findByTransactionId(String transactionId) {
+        return paymentRepository.findByTransactionId(transactionId);
+    }
+
+    public BigDecimal getTotalPaidForInvoice(Long invoiceId) {
+        List<Payment> payments = paymentRepository.findByInvoiceIdAndPaymentStatus(
+                invoiceId, PaymentStatus.COMPLETED);
+
+        return payments.stream()
+                .map(Payment::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    public List<Payment> findPaymentsByDateRange(LocalDateTime startDate, LocalDateTime endDate) {
+        return paymentRepository.findByPaymentDateBetween(startDate, endDate);
+    }
+
+    @Transactional
+    public Payment recordRefund(Long paymentId, BigDecimal refundAmount, String reason) {
+        Payment payment = getPaymentById(paymentId);
+
+        // Validate refund amount
+        if (refundAmount.compareTo(BigDecimal.ZERO) <= 0 || refundAmount.compareTo(payment.getAmount()) > 0) {
+            throw new IllegalArgumentException("Invalid refund amount");
+        }
+
+        // Create a negative payment (refund)
+        Payment refund = new Payment();
+        refund.setInvoice(payment.getInvoice());
+        refund.setAmount(refundAmount.negate()); // Negative amount for refund
+        refund.setMethod(payment.getMethod());
+        refund.setTransactionId("REFUND-" + generateTransactionId());
+        refund.setNotes("Refund for payment ID: " + paymentId + ". Reason: " + reason);
+        refund.setPaymentStatus(PaymentStatus.COMPLETED);
+
+        Payment savedRefund = paymentRepository.save(refund);
+
+        // Update invoice payment status
+        updateInvoicePaymentStatus(payment.getInvoice());
+
+        return savedRefund;
+    }
+
+    public BigDecimal getTotalPaymentsForPeriod(LocalDateTime startDate, LocalDateTime endDate) {
+        List<Payment> payments = paymentRepository.findByPaymentStatusAndPaymentDateBetween(
+                PaymentStatus.COMPLETED, startDate, endDate);
+
+        return payments.stream()
+                .map(Payment::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     private String generateTransactionId() {

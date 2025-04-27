@@ -105,6 +105,8 @@ public class StockMovementService {
         return convertToDTO(savedMovement);
     }
 
+
+
     @Transactional
     public StockMovementDTO completeStockMovement(Long id) {
         StockMovement movement = stockMovementRepository.findById(id)

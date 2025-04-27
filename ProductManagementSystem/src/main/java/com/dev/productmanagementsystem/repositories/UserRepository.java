@@ -23,11 +23,17 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // Find users by active status
     List<User> findByActive(boolean active);
 
+    // Find active users
+    List<User> findByActiveTrue();
+
     // Find users by first name and last name
     List<User> findByFirstNameAndLastName(String firstName, String lastName);
 
     // Find users by first name containing or last name containing
     List<User> findByFirstNameContainingOrLastNameContaining(String firstName, String lastName);
+
+    // Find users by first name or last name (case insensitive)
+    List<User> findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(String firstName, String lastName);
 
     // Find users created after a certain date
     List<User> findByCreatedAtAfter(LocalDateTime date);
@@ -43,6 +49,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // Find users with a specific permission
     @Query("SELECT u FROM User u JOIN u.role r JOIN r.permissions p WHERE p.name = ?1")
     List<User> findByPermissionName(String permissionName);
+
+    // Alternative method for finding users with specific permission using property path
+    List<User> findByRole_Permissions_Name(String permissionName);
+
+    // Find users by role name
+    List<User> findByRole_Name(String roleName);
 
     // Check if username exists
     boolean existsByUsername(String username);

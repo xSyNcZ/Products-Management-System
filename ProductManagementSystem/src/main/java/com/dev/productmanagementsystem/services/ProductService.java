@@ -5,6 +5,7 @@ import com.dev.productmanagementsystem.entities.Category;
 import com.dev.productmanagementsystem.entities.Product;
 import com.dev.productmanagementsystem.entities.Warehouse;
 import com.dev.productmanagementsystem.exceptions.ResourceNotFoundException;
+import com.dev.productmanagementsystem.exceptions.InsufficientStockException;
 import com.dev.productmanagementsystem.repositories.CategoryRepository;
 import com.dev.productmanagementsystem.repositories.ProductRepository;
 import com.dev.productmanagementsystem.repositories.WarehouseRepository;
@@ -16,6 +17,7 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -179,7 +181,6 @@ public class ProductService {
                 stockMap.put(warehouse.getId(), quantity)
         );
         dto.setStockQuantities(stockMap);
-        dto.setTotalStock(product.getTotalStock());
 
         dto.setCreatedAt(product.getCreatedAt());
         dto.setUpdatedAt(product.getUpdatedAt());
@@ -209,5 +210,10 @@ public class ProductService {
         }
 
         return product;
+    }
+
+    // Finds a product by its id
+    public Optional<Product> findById(Long id) {
+        return productRepository.findById(id);
     }
 }

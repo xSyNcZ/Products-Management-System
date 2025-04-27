@@ -29,6 +29,9 @@ public class Invoice {
     @Column(name = "issue_date")
     private LocalDateTime issueDate;
 
+    @Column(name = "last_reminder_date")
+    private LocalDateTime lastReminderDate;
+
     @Column(name = "due_date")
     private LocalDateTime dueDate;
 
@@ -94,5 +97,13 @@ public class Invoice {
     @PrePersist
     protected void onCreate() {
         this.issueDate = LocalDateTime.now();
+    }
+
+    public void setLastReminderDate(LocalDateTime lastReminderDate) {
+        this.lastReminderDate = lastReminderDate;
+    }
+
+    public LocalDateTime getLastReminderDate() {
+        return lastReminderDate;
     }
 }

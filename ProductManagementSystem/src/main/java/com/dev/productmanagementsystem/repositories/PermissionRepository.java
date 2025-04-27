@@ -22,6 +22,9 @@ public interface PermissionRepository extends JpaRepository<Permission, Long> {
     // Find permissions by multiple names
     List<Permission> findByNameIn(Set<String> names);
 
+    // Find permissions by IDs
+    Set<Permission> findByIdIn(Set<Long> ids);
+
     // Check if permission exists by name
     boolean existsByName(String name);
 }

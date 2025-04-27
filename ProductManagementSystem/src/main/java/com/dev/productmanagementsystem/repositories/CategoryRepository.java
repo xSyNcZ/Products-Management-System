@@ -22,10 +22,13 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
     // Find categories that contain a certain string in name or description
     List<Category> findByNameContainingOrDescriptionContaining(String name, String description);
 
+    // Find categories that contain a certain string in name (case insensitive)
+    List<Category> findByNameContainingIgnoreCase(String name);
+
     // Check if a category with a given name exists
     boolean existsByName(String name);
 
     // Count subcategories for a parent category
-    @Query("SELECT COUNT(c) FROM Category c WHERE c.parent.id = ?1")//!TODO - might be an issue
+    @Query("SELECT COUNT(c) FROM Category c WHERE c.parent.id = ?1")
     Long countSubcategoriesByParentId(Long parentId);
 }

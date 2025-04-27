@@ -268,28 +268,10 @@ public class OrderService {
         return convertToDTO(updatedOrder);
     }
 
-    /**
-     * Get orders requiring shipment (confirmed but not shipped)
-     * @return List of orders to be shipped
-     */
     public List<OrderDTO> getOrdersToShip() {
         return orderRepository.findByStatus(OrderStatus.CONFIRMED).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
-    }
-
-    /**
-     * Get customer order history with pagination
-     * @param customerId The customer ID
-     * @param page Page number (0-indexed)
-     * @param size Page size
-     * @return Page of customer orders
-     */
-    public Page<OrderDTO> getCustomerOrderHistory(Long customerId, int page, int size) {
-        PageRequest pageRequest = PageRequest.of(page, size, Sort.by("orderDate").descending());
-        Page<Order> orderPage = orderRepository.findByCustomerId(customerId, pageRequest);
-
-        return orderPage.map(this::convertToDTO);
     }
 
     private String generateOrderNumber() {
@@ -382,7 +364,6 @@ public class OrderService {
                 itemDTO.setSourceWarehouseName(item.getSourceWarehouse().getName());
             }
 
-            itemDTO.setTotalPrice(item.getTotalPrice());
             itemDTOs.add(itemDTO);
         }
 

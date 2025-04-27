@@ -32,6 +32,10 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     // Find products with name containing
     List<Product> findByNameContaining(String name);
 
+    // Find products by name containing a string (case insensitive)
+    List<Product> findByNameContainingIgnoreCase(String name);
+
+
     // Find products in stock at a specific warehouse
     @Query("SELECT p FROM Product p JOIN p.stockQuantities sq WHERE KEY(sq) = ?1 AND VALUE(sq) > 0")
     List<Product> findInStockAtWarehouse(Long warehouseId);

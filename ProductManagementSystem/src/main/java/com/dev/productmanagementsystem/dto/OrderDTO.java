@@ -9,7 +9,9 @@ public class OrderDTO {
     private Long id;
     private String orderNumber;
     private Long customerId;
+    private String customerName;
     private Long salesManagerId;
+    private String salesManagerName;
     private OrderStatus status;
     private LocalDateTime orderDate;
     private LocalDateTime shippingDate;
@@ -32,8 +34,14 @@ public class OrderDTO {
     public Long getCustomerId() { return customerId; }
     public void setCustomerId(Long customerId) { this.customerId = customerId; }
 
+    public String getCustomerName() { return customerName; }
+    public void setCustomerName(String customerName) { this.customerName = customerName; }
+
     public Long getSalesManagerId() { return salesManagerId; }
     public void setSalesManagerId(Long salesManagerId) { this.salesManagerId = salesManagerId; }
+
+    public String getSalesManagerName() { return salesManagerName; }
+    public void setSalesManagerName(String salesManagerName) { this.salesManagerName = salesManagerName; }
 
     public OrderStatus getStatus() { return status; }
     public void setStatus(OrderStatus status) { this.status = status; }

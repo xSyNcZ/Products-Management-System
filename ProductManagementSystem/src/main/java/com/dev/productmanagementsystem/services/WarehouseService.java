@@ -83,11 +83,11 @@ public class WarehouseService {
     }
 
     public List<Warehouse> findByNameContaining(String name) {
-        return warehouseRepository.findByNameContainingIgnoreCase(name);
+        return warehouseRepository.findWarehouseByNameContainingIgnoreCase(name);
     }
 
     public List<Warehouse> findByCity(String city) {
-        return warehouseRepository.findByCityContainingIgnoreCase(city);
+        return warehouseRepository.findByCityContainingIgnoreCaseWarehouse(city);
     }
 
     public Integer getProductStock(Long productId, Long warehouseId) {
