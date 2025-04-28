@@ -1,11 +1,13 @@
 package com.dev.productmanagementsystem.entities;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
 @Table(name = "warehouses")
 public class Warehouse {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -27,10 +29,13 @@ public class Warehouse {
     private User manager;
 
     @OneToMany(mappedBy = "warehouse")
-    private Set<User> workers;
+    private Set<User> workers = new HashSet<>(); // Initialize the workers set
 
-    @OneToMany(mappedBy = "warehouse")
-    private Set<StockMovement> stockMovements;
+    @OneToMany(mappedBy = "sourceWarehouse")
+    private Set<StockMovement> stockMovementsFrom;
+
+    @OneToMany(mappedBy = "destinationWarehouse")
+    private Set<StockMovement> stockMovementsTo;
 
     // Constructors
     public Warehouse() {}
@@ -105,11 +110,19 @@ public class Warehouse {
         this.workers.remove(worker);
     }
 
-    public Set<StockMovement> getStockMovements() {
-        return stockMovements;
+    public Set<StockMovement> getStockMovementsFrom() {
+        return stockMovementsFrom;
     }
 
-    public void setStockMovements(Set<StockMovement> stockMovements) {
-        this.stockMovements = stockMovements;
+    public void setStockMovementsFrom(Set<StockMovement> stockMovementsFrom) {
+        this.stockMovementsFrom = stockMovementsFrom;
+    }
+
+    public Set<StockMovement> getStockMovementsTo() {
+        return stockMovementsTo;
+    }
+
+    public void setStockMovementsTo(Set<StockMovement> stockMovementsTo) {
+        this.stockMovementsTo = stockMovementsTo;
     }
 }

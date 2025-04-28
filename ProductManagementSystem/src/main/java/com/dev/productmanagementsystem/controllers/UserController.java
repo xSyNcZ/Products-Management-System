@@ -1,6 +1,7 @@
 package com.dev.productmanagementsystem.controllers;
 
 import com.dev.productmanagementsystem.dto.UserDTO;
+import com.dev.productmanagementsystem.entities.Role;
 import com.dev.productmanagementsystem.entities.User;
 import com.dev.productmanagementsystem.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -159,9 +160,12 @@ public class UserController {
         dto.setFirstName(user.getFirstName());
         dto.setLastName(user.getLastName());
 
-        if (user.getRole() != null) {
-            dto.setRoleId(user.getRole().getId());
-            dto.setRoleName(user.getRole().getName());
+        // Obsługa wielu ról
+        if (user.getRoles() != null && !user.getRoles().isEmpty()) {
+            // Jeśli chcesz pobrać tylko *pierwszą* rolę
+            Role firstRole = user.getRoles().iterator().next();
+            dto.setRoleId(firstRole.getId());
+            dto.setRoleName(firstRole.getName());
         }
 
         dto.setActive(user.isActive());
@@ -169,4 +173,5 @@ public class UserController {
 
         return dto;
     }
+
 }

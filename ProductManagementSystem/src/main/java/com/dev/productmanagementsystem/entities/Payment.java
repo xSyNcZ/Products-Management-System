@@ -3,7 +3,7 @@ package com.dev.productmanagementsystem.entities;
 import com.dev.productmanagementsystem.enums.PaymentMethod;
 import com.dev.productmanagementsystem.enums.PaymentStatus;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 

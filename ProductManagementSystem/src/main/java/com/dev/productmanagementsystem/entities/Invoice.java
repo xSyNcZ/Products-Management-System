@@ -2,7 +2,7 @@ package com.dev.productmanagementsystem.entities;
 
 import com.dev.productmanagementsystem.enums.PaymentStatus;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -105,5 +105,9 @@ public class Invoice {
 
     public LocalDateTime getLastReminderDate() {
         return lastReminderDate;
+    }
+
+    public void setTotalAmount(BigDecimal add) {
+
     }
 }

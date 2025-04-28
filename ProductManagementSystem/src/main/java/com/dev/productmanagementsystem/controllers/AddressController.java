@@ -2,7 +2,9 @@ package com.dev.productmanagementsystem.controllers;
 
 import com.dev.productmanagementsystem.dto.AddressDTO;
 import com.dev.productmanagementsystem.entities.Address;
+import com.dev.productmanagementsystem.entities.User;
 import com.dev.productmanagementsystem.repositories.AddressRepository;
+import com.dev.productmanagementsystem.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +20,9 @@ public class AddressController {
 
     @Autowired
     private AddressRepository addressRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @GetMapping
     public ResponseEntity<List<AddressDTO>> getAllAddresses() {
@@ -72,6 +77,17 @@ public class AddressController {
     @PostMapping
     public ResponseEntity<AddressDTO> createAddress(@RequestBody AddressDTO addressDTO) {
         Address address = convertToEntity(addressDTO);
+
+        // If this address is linked to a user, we need to ensure the user is set properly
+        if (addressDTO.getUserId() != null) {
+            Optional<User> userOptional = userRepository.findById(addressDTO.getUserId());
+            if (userOptional.isPresent()) {
+                address.setUser(userOptional.get());
+            } else {
+                return ResponseEntity.badRequest().build();
+            }
+        }
+
         Address savedAddress = addressRepository.save(address);
         return new ResponseEntity<>(convertToDTO(savedAddress), HttpStatus.CREATED);
     }
@@ -82,10 +98,31 @@ public class AddressController {
             return ResponseEntity.notFound().build();
         }
 
-        Address address = convertToEntity(addressDTO);
-        address.setId(id);
-        Address updatedAddress = addressRepository.save(address);
-        return ResponseEntity.ok(convertToDTO(updatedAddress));
+        // Fetch the existing address to preserve relationships
+        Optional<Address> existingAddressOpt = addressRepository.findById(id);
+        if (existingAddressOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Address existingAddress = existingAddressOpt.get();
+        Address updatedAddress = convertToEntity(addressDTO);
+        updatedAddress.setId(id);
+
+        // Preserve the user relationship
+        updatedAddress.setUser(existingAddress.getUser());
+
+        // If there's a new userId in the DTO, update the user relationship
+        if (addressDTO.getUserId() != null) {
+            Optional<User> userOptional = userRepository.findById(addressDTO.getUserId());
+            if (userOptional.isPresent()) {
+                updatedAddress.setUser(userOptional.get());
+            } else {
+                return ResponseEntity.badRequest().build();
+            }
+        }
+
+        Address savedAddress = addressRepository.save(updatedAddress);
+        return ResponseEntity.ok(convertToDTO(savedAddress));
     }
 
     @DeleteMapping("/{id}")
@@ -107,6 +144,12 @@ public class AddressController {
         dto.setPostalCode(address.getPostalCode());
         dto.setCountry(address.getCountry());
         dto.setPhoneNumber(address.getPhoneNumber());
+
+        // Include the userId in the DTO if there's a related user
+        if (address.getUser() != null) {
+            dto.setUserId(address.getUser().getId());
+        }
+
         return dto;
     }
 

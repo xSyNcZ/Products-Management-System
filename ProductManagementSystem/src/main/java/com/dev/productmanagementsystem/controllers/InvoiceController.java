@@ -132,15 +132,18 @@ public class InvoiceController {
         if (invoiceDTO.getOrderId() != null) {
             Optional<Order> orderOptional = orderRepository.findById(invoiceDTO.getOrderId());
             if (orderOptional.isPresent()) {
-                invoice.setOrder(orderOptional.get());
-                invoice.setTotalAmount(orderOptional.get().getTotalAmount());
+                Order order = orderOptional.get();
+                invoice.setOrder(order);
+
+                // Calculate total amount with tax
+                BigDecimal orderTotal = order.getTotalAmount();
+                BigDecimal taxAmount = orderTotal.multiply(invoice.getTax().divide(new BigDecimal("100")));
+                // Use the method from Invoice entity to set the total amount
+                invoice.setTotalAmount(orderTotal.add(taxAmount));
             } else {
                 return ResponseEntity.badRequest().build();
             }
         }
-
-        // Accountant would be set here if there's a user repository
-        // For now, we're not setting it since User entity wasn't provided in full context
 
         Invoice savedInvoice = invoiceRepository.save(invoice);
         return new ResponseEntity<>(convertToDTO(savedInvoice), HttpStatus.CREATED);
@@ -167,7 +170,20 @@ public class InvoiceController {
         if (invoiceDTO.getOrderId() != null &&
                 (invoice.getOrder() == null || !invoice.getOrder().getId().equals(invoiceDTO.getOrderId()))) {
             Optional<Order> orderOptional = orderRepository.findById(invoiceDTO.getOrderId());
-            orderOptional.ifPresent(invoice::setOrder);
+            if (orderOptional.isPresent()) {
+                Order order = orderOptional.get();
+                invoice.setOrder(order);
+
+                // Recalculate total amount with tax
+                BigDecimal orderTotal = order.getTotalAmount();
+                BigDecimal taxAmount = orderTotal.multiply(invoice.getTax().divide(new BigDecimal("100")));
+                invoice.setTotalAmount(orderTotal.add(taxAmount));
+            }
+        } else if (invoice.getOrder() != null) {
+            // Recalculate total with current order and tax
+            BigDecimal orderTotal = invoice.getOrder().getTotalAmount();
+            BigDecimal taxAmount = orderTotal.multiply(invoice.getTax().divide(new BigDecimal("100")));
+            invoice.setTotalAmount(orderTotal.add(taxAmount));
         }
 
         Invoice updatedInvoice = invoiceRepository.save(invoice);

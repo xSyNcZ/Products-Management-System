@@ -1,6 +1,6 @@
 package com.dev.productmanagementsystem.entities;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
@@ -27,9 +27,13 @@ public class User {
     @Column(name = "last_name")
     private String lastName;
 
-    @ManyToOne
-    @JoinColumn(name = "role_id")
-    private Role role;
+    @ManyToMany
+    @JoinTable(
+            name = "user_roles",  // Tworzymy tabelę łączącą użytkowników i role
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    private Set<Role> roles;  // Używamy Set, bo użytkownik może mieć wiele ról
 
     @Column(name = "active")
     private boolean active;
@@ -46,8 +50,16 @@ public class User {
     @OneToMany(mappedBy = "salesManager")
     private List<Order> managedOrders;
 
+    @ManyToOne
+    @JoinColumn(name = "warehouse_id")
+    private Warehouse warehouse;
+
     @OneToMany(mappedBy = "manager")
     private Set<Warehouse> managedWarehouses;
+
+    @OneToOne
+    @JoinColumn(name = "address_id")  // Wskazuje pole w bazie, które łączy te encje
+    private Address address;
 
     @ManyToMany
     @JoinTable(
@@ -105,12 +117,12 @@ public class User {
         this.lastName = lastName;
     }
 
-    public Role getRole() {
-        return role;
+    public Set<Role> getRoles() {
+        return roles;
     }
 
-    public void setRole(Role role) {
-        this.role = role;
+    public void setRoles(Set<Role> roles) {
+        this.roles = roles;
     }
 
     public boolean isActive() {
@@ -138,5 +150,9 @@ public class User {
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 }

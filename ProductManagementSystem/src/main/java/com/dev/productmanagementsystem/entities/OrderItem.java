@@ -1,6 +1,6 @@
 package com.dev.productmanagementsystem.entities;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 
 @Entity

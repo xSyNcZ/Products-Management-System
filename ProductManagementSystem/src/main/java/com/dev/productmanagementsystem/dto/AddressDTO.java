@@ -8,6 +8,7 @@ public class AddressDTO {
     private String postalCode;
     private String country;
     private String phoneNumber;
+    private Long userId;  // Added this field
 
     // Constructors
     public AddressDTO() {}
@@ -33,4 +34,7 @@ public class AddressDTO {
 
     public String getPhoneNumber() { return phoneNumber; }
     public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
 }

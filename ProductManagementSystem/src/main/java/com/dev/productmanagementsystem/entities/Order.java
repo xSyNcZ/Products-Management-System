@@ -2,7 +2,7 @@ package com.dev.productmanagementsystem.entities;
 
 import com.dev.productmanagementsystem.enums.OrderStatus;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashSet;

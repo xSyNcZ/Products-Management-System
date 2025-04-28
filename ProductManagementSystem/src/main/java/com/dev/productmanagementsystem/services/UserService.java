@@ -11,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
@@ -41,13 +42,11 @@ public class UserService {
     }
 
     public User save(User user) {
-        // Encode password before saving
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         return userRepository.save(user);
     }
 
     public User update(User user) {
-        // Check if password has been changed
         Optional<User> existingUser = userRepository.findById(user.getId());
         if (existingUser.isPresent() && !existingUser.get().getPassword().equals(user.getPassword())) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
@@ -65,12 +64,16 @@ public class UserService {
         Role role = roleRepository.findById(roleId)
                 .orElseThrow(() -> new IllegalArgumentException("Role not found"));
 
-        user.setRole(role);
+        if (user.getRoles() == null) {
+            user.setRoles(new HashSet<>());
+        }
+        user.getRoles().add(role);
+
         return userRepository.save(user);
     }
 
     public List<User> findUsersByRole(String roleName) {
-        return userRepository.findByRole_Name(roleName);
+        return userRepository.findByRoles_Name(roleName);  // Zmiana z findByRole_Name na findByRoles_Name
     }
 
     public List<User> findActiveUsers() {
@@ -87,7 +90,6 @@ public class UserService {
 
     @Transactional
     public User createUserWithRole(User user, String roleName) {
-        // Check if username or email already exists
         if (userRepository.findByUsername(user.getUsername()).isPresent()) {
             throw new DuplicateResourceException("Username already exists: " + user.getUsername());
         }
@@ -96,14 +98,16 @@ public class UserService {
             throw new DuplicateResourceException("Email already exists: " + user.getEmail());
         }
 
-        // Find role
         Role role = roleRepository.findByName(roleName)
                 .orElseThrow(() -> new ResourceNotFoundException("Role not found with name: " + roleName));
 
-        // Set role and encrypt password
-        user.setRole(role);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         user.setActive(true);
+
+        if (user.getRoles() == null) {
+            user.setRoles(new HashSet<>());
+        }
+        user.getRoles().add(role);
 
         return userRepository.save(user);
     }
@@ -113,12 +117,10 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
-        // Verify current password
         if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
             throw new IllegalArgumentException("Current password is incorrect");
         }
 
-        // Update password
         user.setPassword(passwordEncoder.encode(newPassword));
         return userRepository.save(user);
     }
@@ -127,12 +129,12 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
-        Role role = user.getRole();
-        if (role == null) {
+        if (user.getRoles() == null || user.getRoles().isEmpty()) {
             return false;
         }
 
-        return role.getPermissions().stream()
+        return user.getRoles().stream()
+                .flatMap(role -> role.getPermissions().stream())
                 .anyMatch(permission -> permission.getName().equals(permissionName));
     }
 

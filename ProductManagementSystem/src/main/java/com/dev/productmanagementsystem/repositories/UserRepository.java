@@ -26,6 +26,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // Find active users
     List<User> findByActiveTrue();
 
+    List<User> findByRoles_Name(String roleName);
     // Find users by first name and last name
     List<User> findByFirstNameAndLastName(String firstName, String lastName);
 
@@ -47,14 +48,17 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findWarehouseManagers();
 
     // Find users with a specific permission
-    @Query("SELECT u FROM User u JOIN u.role r JOIN r.permissions p WHERE p.name = ?1")
+    @Query("SELECT u FROM User u JOIN u.roles r JOIN r.permissions p WHERE p.name = ?1")
     List<User> findByPermissionName(String permissionName);
 
     // Alternative method for finding users with specific permission using property path
     List<User> findByRole_Permissions_Name(String permissionName);
 
-    // Find users by role name
-    List<User> findByRole_Name(String roleName);
+    // Find users by role name (fix: roles instead of role)
+    // Find users with a specific permission (poprawiona wersja)
+    @Query("SELECT u FROM User u JOIN u.roles r JOIN r.permissions p WHERE p.name = ?1")
+    List<User> findByRoles_Permissions_Name(String permissionName);
+    // Zmiana z 'role' na 'roles'
 
     // Check if username exists
     boolean existsByUsername(String username);

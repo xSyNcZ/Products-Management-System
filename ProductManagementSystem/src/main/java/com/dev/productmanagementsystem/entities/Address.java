@@ -1,6 +1,6 @@
 package com.dev.productmanagementsystem.entities;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.Set;
 
 @Entity
@@ -37,6 +37,9 @@ public class Address {
     @OneToMany(mappedBy = "billingAddress")
     private Set<Order> billingOrders;
 
+
+
+
     // Constructors
     public Address() {}
 
@@ -64,4 +67,10 @@ public class Address {
 
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
+
+    public Set<Order> getShippingOrders() { return shippingOrders; }
+    public void setShippingOrders(Set<Order> shippingOrders) { this.shippingOrders = shippingOrders; }
+
+    public Set<Order> getBillingOrders() { return billingOrders; }
+    public void setBillingOrders(Set<Order> billingOrders) { this.billingOrders = billingOrders; }
 }

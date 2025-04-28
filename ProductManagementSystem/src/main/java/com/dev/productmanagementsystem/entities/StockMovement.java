@@ -1,13 +1,13 @@
 package com.dev.productmanagementsystem.entities;
 
 import com.dev.productmanagementsystem.enums.MovementStatus;
-
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "stock_movements")
 public class StockMovement {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -41,10 +41,11 @@ public class StockMovement {
     @Column(name = "notes")
     private String notes;
 
-    // Constructors
+    // Konstruktor
     public StockMovement() {}
 
-    // Getters and Setters
+    // Gettery i Settery
+
     public Long getId() {
         return id;
     }
