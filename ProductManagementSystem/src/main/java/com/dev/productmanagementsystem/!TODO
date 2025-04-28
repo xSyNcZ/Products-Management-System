@@ -18,10 +18,11 @@ TODO:
 +add services
 +verify services
 +fix services
--verify repositories
--fix repositories
++verify repositories (
++fix repositories
 -!ask about the class diagram and services ("do we have to put the services with methods and repositories into class diagram?")
-(+/-)verify/add controllers (verify whether we have them already or we have to implement them)(i think they are needed for the frontend)
++ verify/add controllers (verify whether we have them already or we have to implement them)(i think they are needed for the frontend)
+- fix controllers
 -think of any additional functionalities of the program and add ideas in the text file
 -implement the methods (that are missing/should be there or anything like that)
 -delete unused methods
@@ -29,7 +30,7 @@ TODO:
 -update the folder structure
 -update diagram
 -delete unnecessary imports
--fix the visual code presentation
++fix the visual code presentation
 -fix gitignore (optional)
 AFTER 7.05.2025.
 -create frontend
