@@ -73,7 +73,7 @@ public class UserService {
     }
 
     public List<User> findUsersByRole(String roleName) {
-        return userRepository.findByRoles_Name(roleName);  // Zmiana z findByRole_Name na findByRoles_Name
+        return userRepository.findByRoles_Name(roleName);
     }
 
     public List<User> findActiveUsers() {
@@ -139,7 +139,7 @@ public class UserService {
     }
 
     public List<User> findUsersWithPermission(String permissionName) {
-        return userRepository.findByRole_Permissions_Name(permissionName);
+        return userRepository.findByRoles_Permissions_Name(permissionName);
     }
 
     public User activateUser(Long userId) {
