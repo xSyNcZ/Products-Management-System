@@ -30,6 +30,8 @@ TODO:
 + Make each and every function work (at least in theory, kinda like a "fix" step)
 + fix the visual code presentation
 AFTER 7.05.2025.
++ fix database in app properties
+- fix dependencies in maven
 - create frontend
 - fix class diagram
 - update the folder structure
