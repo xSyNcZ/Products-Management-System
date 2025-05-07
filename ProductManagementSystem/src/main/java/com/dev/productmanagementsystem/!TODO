@@ -14,28 +14,28 @@ TODO:
 +Check for errors and fix them (DTO)
 +add Repositories
 +fix repositories
--!fix issue with dependencies (ask the Lecturer about this)
++fix issue with dependencies (ask the Lecturer about this)
 +add services
 +verify services
 +fix services
-+verify repositories (
++verify repositories
 +fix repositories
--!ask about the class diagram and services ("do we have to put the services with methods and repositories into class diagram?")
++ask about the class diagram and services ("do we have to put the services with methods and repositories into class diagram?")
 + verify/add controllers (verify whether we have them already or we have to implement them)(i think they are needed for the frontend)
 + fix controllers
--think of any additional functionalities of the program and add ideas in the text file
++think of any additional functionalities of the program and add ideas in the text file
 + implement the methods (that are missing/should be there or anything like that)
--delete unused methods
++delete unused methods
 + delete unused dependencies
-- Make each and every function work (at least in theory, kinda like a "fix" step)
++ Make each and every function work (at least in theory, kinda like a "fix" step)
++ fix the visual code presentation
+AFTER 7.05.2025.
+- create frontend
+- fix class diagram
 - update the folder structure
 - update diagram
 - delete unnecessary imports
-+ fix the visual code presentation
 - fix gitignore (optional)
-- prevent George Floyd from breathing (obligatory)
-AFTER 7.05.2025.
--create frontend
 -Update !TODO
 
 
