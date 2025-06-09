@@ -1,300 +1,449 @@
 // Products Management JavaScript
+// Fixed version that works with the HTML structure and uses localStorage
 
-class ProductManager {
-    constructor() {
-        this.products = [];
-        this.categories = [];
-        this.apiBaseUrl = '/api';
-    }
+// Global variables
+let products = [];
+let categories = [];
+let currentProductId = null;
 
-    // Initialize the product manager
-    async init() {
-        try {
-            await this.loadCategories();
-            await this.loadProducts();
-            this.setupEventListeners();
-        } catch (error) {
-            console.error('Error initializing ProductManager:', error);
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    loadCategories();
+    loadProducts();
+    setupEventListeners();
+    populateCategories();
+});
+
+// Setup event listeners
+function setupEventListeners() {
+    // Product form submission
+    document.getElementById('productForm').addEventListener('submit', saveProduct);
+
+    // Modal close on outside click
+    window.addEventListener('click', function(event) {
+        const modal = document.getElementById('productModal');
+        if (event.target === modal) {
+            closeModal();
         }
-    }
+    });
 
-    // Load all categories
-    async loadCategories() {
-        try {
-            const response = await fetch(`${this.apiBaseUrl}/categories`);
-            if (response.ok) {
-                this.categories = await response.json();
-            }
-        } catch (error) {
-            console.error('Error loading categories:', error);
-        }
-    }
+    // Search input real-time filtering
+    document.getElementById('searchInput').addEventListener('input', filterProducts);
+}
 
-    // Load all products
-    async loadProducts() {
-        try {
-            const response = await fetch(`${this.apiBaseUrl}/products`);
-            if (response.ok) {
-                this.products = await response.json();
-                this.renderProductList();
-            }
-        } catch (error) {
-            console.error('Error loading products:', error);
-        }
-    }
-
-    // Create a new product
-    async createProduct(productData) {
-        try {
-            const response = await fetch(`${this.apiBaseUrl}/products`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(productData)
-            });
-
-            if (response.ok) {
-                const newProduct = await response.json();
-                this.products.push(newProduct);
-                this.renderProductList();
-                return newProduct;
-            } else {
-                throw new Error('Failed to create product');
-            }
-        } catch (error) {
-            console.error('Error creating product:', error);
-            throw error;
-        }
-    }
-
-    // Update an existing product
-    async updateProduct(productId, productData) {
-        try {
-            const response = await fetch(`${this.apiBaseUrl}/products/${productId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(productData)
-            });
-
-            if (response.ok) {
-                const updatedProduct = await response.json();
-                const index = this.products.findIndex(p => p.id === productId);
-                if (index !== -1) {
-                    this.products[index] = updatedProduct;
-                    this.renderProductList();
-                }
-                return updatedProduct;
-            } else {
-                throw new Error('Failed to update product');
-            }
-        } catch (error) {
-            console.error('Error updating product:', error);
-            throw error;
-        }
-    }
-
-    // Delete a product
-    async deleteProduct(productId) {
-        try {
-            const response = await fetch(`${this.apiBaseUrl}/products/${productId}`, {
-                method: 'DELETE'
-            });
-
-            if (response.ok) {
-                this.products = this.products.filter(p => p.id !== productId);
-                this.renderProductList();
-                return true;
-            } else {
-                throw new Error('Failed to delete product');
-            }
-        } catch (error) {
-            console.error('Error deleting product:', error);
-            throw error;
-        }
-    }
-
-    // Get product by ID
-    getProductById(productId) {
-        return this.products.find(p => p.id === productId);
-    }
-
-    // Search products
-    searchProducts(query) {
-        const lowerQuery = query.toLowerCase();
-        return this.products.filter(product =>
-            product.name.toLowerCase().includes(lowerQuery) ||
-            product.description.toLowerCase().includes(lowerQuery)
-        );
-    }
-
-    // Filter products by category
-    filterProductsByCategory(categoryId) {
-        if (!categoryId) return this.products;
-        return this.products.filter(product => product.category && product.category.id === categoryId);
-    }
-
-    // Render product list in the DOM
-    renderProductList() {
-        const container = document.getElementById('product-list');
-        if (!container) return;
-
-        container.innerHTML = '';
-
-        this.products.forEach(product => {
-            const productElement = this.createProductElement(product);
-            container.appendChild(productElement);
-        });
-    }
-
-    // Create a product element for display
-    createProductElement(product) {
-        const div = document.createElement('div');
-        div.className = 'product-item';
-        div.innerHTML = `
-            <div class="product-card">
-                <h3>${product.name}</h3>
-                <p class="product-description">${product.description || 'No description'}</p>
-                <p class="product-price">$${product.price ? product.price.toFixed(2) : '0.00'}</p>
-                <p class="product-category">Category: ${product.category ? product.category.name : 'Uncategorized'}</p>
-                <div class="product-actions">
-                    <button onclick="productManager.editProduct(${product.id})" class="btn btn-edit">Edit</button>
-                    <button onclick="productManager.confirmDeleteProduct(${product.id})" class="btn btn-delete">Delete</button>
-                </div>
-            </div>
-        `;
-        return div;
-    }
-
-    // Setup event listeners
-    setupEventListeners() {
-        // Product form submission
-        const productForm = document.getElementById('product-form');
-        if (productForm) {
-            productForm.addEventListener('submit', this.handleProductSubmit.bind(this));
-        }
-
-        // Search functionality
-        const searchInput = document.getElementById('product-search');
-        if (searchInput) {
-            searchInput.addEventListener('input', this.handleSearch.bind(this));
-        }
-
-        // Category filter
-        const categoryFilter = document.getElementById('category-filter');
-        if (categoryFilter) {
-            this.populateCategoryFilter();
-            categoryFilter.addEventListener('change', this.handleCategoryFilter.bind(this));
-        }
-    }
-
-    // Handle product form submission
-    async handleProductSubmit(event) {
-        event.preventDefault();
-        const form = event.target;
-        const formData = new FormData(form);
-
-        const productData = {
-            name: formData.get('name'),
-            description: formData.get('description'),
-            price: parseFloat(formData.get('price')),
-            category: formData.get('categoryId') ? { id: parseInt(formData.get('categoryId')) } : null
-        };
-
-        const productId = formData.get('productId');
-
-        try {
-            if (productId) {
-                await this.updateProduct(parseInt(productId), productData);
-            } else {
-                await this.createProduct(productData);
-            }
-            form.reset();
-            this.clearForm();
-        } catch (error) {
-            alert('Error saving product: ' + error.message);
-        }
-    }
-
-    // Handle search input
-    handleSearch(event) {
-        const query = event.target.value;
-        const filteredProducts = this.searchProducts(query);
-        this.renderFilteredProducts(filteredProducts);
-    }
-
-    // Handle category filter
-    handleCategoryFilter(event) {
-        const categoryId = event.target.value ? parseInt(event.target.value) : null;
-        const filteredProducts = this.filterProductsByCategory(categoryId);
-        this.renderFilteredProducts(filteredProducts);
-    }
-
-    // Render filtered products
-    renderFilteredProducts(products) {
-        const container = document.getElementById('product-list');
-        if (!container) return;
-
-        container.innerHTML = '';
-        products.forEach(product => {
-            const productElement = this.createProductElement(product);
-            container.appendChild(productElement);
-        });
-    }
-
-    // Populate category filter dropdown
-    populateCategoryFilter() {
-        const select = document.getElementById('category-filter');
-        if (!select) return;
-
-        select.innerHTML = '<option value="">All Categories</option>';
-        this.categories.forEach(category => {
-            const option = document.createElement('option');
-            option.value = category.id;
-            option.textContent = category.name;
-            select.appendChild(option);
-        });
-    }
-
-    // Edit product
-    editProduct(productId) {
-        const product = this.getProductById(productId);
-        if (!product) return;
-
-        const form = document.getElementById('product-form');
-        if (!form) return;
-
-        form.elements.productId.value = product.id;
-        form.elements.name.value = product.name;
-        form.elements.description.value = product.description || '';
-        form.elements.price.value = product.price || '';
-        form.elements.categoryId.value = product.category ? product.category.id : '';
-    }
-
-    // Confirm delete product
-    confirmDeleteProduct(productId) {
-        const product = this.getProductById(productId);
-        if (!product) return;
-
-        if (confirm(`Are you sure you want to delete "${product.name}"?`)) {
-            this.deleteProduct(productId);
-        }
-    }
-
-    // Clear form
-    clearForm() {
-        const form = document.getElementById('product-form');
-        if (form) {
-            form.elements.productId.value = '';
-        }
+// Load categories from localStorage (or get sample data)
+function loadCategories() {
+    try {
+        const storedCategories = localStorage.getItem('categories');
+        categories = storedCategories ? JSON.parse(storedCategories) : getSampleCategories();
+    } catch (error) {
+        console.error('Error loading categories:', error);
+        categories = getSampleCategories();
     }
 }
 
-// Initialize the product manager when the DOM is loaded
-let productManager;
-document.addEventListener('DOMContentLoaded', () => {
-    productManager = new ProductManager();
-    productManager.init();
-});
+// Load products from localStorage (or get sample data)
+function loadProducts() {
+    try {
+        const storedProducts = localStorage.getItem('products');
+        products = storedProducts ? JSON.parse(storedProducts) : getSampleProducts();
+
+        // If no stored products, save sample data
+        if (!storedProducts) {
+            saveProducts();
+        }
+
+        renderProductsTable();
+    } catch (error) {
+        console.error('Error loading products:', error);
+        products = getSampleProducts();
+        renderProductsTable();
+    }
+}
+
+// Get sample categories
+function getSampleCategories() {
+    return [
+        { id: 1, name: 'Electronics', description: 'Electronic devices and accessories' },
+        { id: 2, name: 'Clothing', description: 'Apparel and fashion items' },
+        { id: 3, name: 'Books', description: 'Books and educational materials' },
+        { id: 4, name: 'Home & Garden', description: 'Home improvement and gardening supplies' },
+        { id: 5, name: 'Sports', description: 'Sports equipment and accessories' }
+    ];
+}
+
+// Get sample products
+function getSampleProducts() {
+    return [
+        {
+            id: 1,
+            name: 'Smartphone Pro',
+            description: 'Latest flagship smartphone with advanced camera and AI features',
+            price: 999.99,
+            categoryId: 1
+        },
+        {
+            id: 2,
+            name: 'Gaming Laptop',
+            description: 'High-performance laptop for gaming and professional work',
+            price: 1599.99,
+            categoryId: 1
+        },
+        {
+            id: 3,
+            name: 'Wireless Headphones',
+            description: 'Premium noise-canceling wireless headphones',
+            price: 299.99,
+            categoryId: 1
+        },
+        {
+            id: 4,
+            name: 'Cotton T-Shirt',
+            description: 'Comfortable 100% cotton t-shirt in various colors',
+            price: 24.99,
+            categoryId: 2
+        },
+        {
+            id: 5,
+            name: 'Denim Jeans',
+            description: 'Classic straight-fit denim jeans',
+            price: 79.99,
+            categoryId: 2
+        },
+        {
+            id: 6,
+            name: 'Programming Guide',
+            description: 'Comprehensive guide to modern programming languages',
+            price: 49.99,
+            categoryId: 3
+        },
+        {
+            id: 7,
+            name: 'Mystery Novel',
+            description: 'Bestselling mystery thriller novel',
+            price: 16.99,
+            categoryId: 3
+        },
+        {
+            id: 8,
+            name: 'Garden Tool Set',
+            description: 'Complete 12-piece garden tool set with storage bag',
+            price: 89.99,
+            categoryId: 4
+        },
+        {
+            id: 9,
+            name: 'Indoor Plant Pot',
+            description: 'Decorative ceramic pot perfect for indoor plants',
+            price: 34.99,
+            categoryId: 4
+        },
+        {
+            id: 10,
+            name: 'Basketball',
+            description: 'Official size basketball for indoor and outdoor play',
+            price: 39.99,
+            categoryId: 5
+        }
+    ];
+}
+
+// Save products to localStorage
+function saveProducts() {
+    try {
+        localStorage.setItem('products', JSON.stringify(products));
+    } catch (error) {
+        console.error('Error saving products:', error);
+        showNotification('Error saving products', 'error');
+    }
+}
+
+// Render products table
+function renderProductsTable() {
+    const tbody = document.getElementById('productsTableBody');
+
+    if (products.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No products found</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = products.map(product => {
+        const category = categories.find(c => c.id === product.categoryId);
+        return `
+            <tr>
+                <td>${product.id}</td>
+                <td>${escapeHtml(product.name)}</td>
+                <td>${escapeHtml(product.description || 'No description')}</td>
+                <td>$${product.price ? product.price.toFixed(2) : '0.00'}</td>
+                <td>${category ? escapeHtml(category.name) : 'Uncategorized'}</td>
+                <td class="actions">
+                    <button onclick="editProduct(${product.id})" class="btn btn-sm btn-primary" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button onclick="deleteProduct(${product.id})" class="btn btn-sm btn-danger" title="Delete">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// Populate category dropdowns
+function populateCategories() {
+    const categoryFilter = document.getElementById('categoryFilter');
+    const productCategory = document.getElementById('productCategory');
+
+    // Clear existing options (except "All Categories" for filter)
+    categoryFilter.innerHTML = '<option value="">All Categories</option>';
+    productCategory.innerHTML = '<option value="">Select Category</option>';
+
+    // Add category options
+    categories.forEach(category => {
+        // For filter dropdown
+        const filterOption = document.createElement('option');
+        filterOption.value = category.id;
+        filterOption.textContent = category.name;
+        categoryFilter.appendChild(filterOption);
+
+        // For product form dropdown
+        const formOption = document.createElement('option');
+        formOption.value = category.id;
+        formOption.textContent = category.name;
+        productCategory.appendChild(formOption);
+    });
+}
+
+// Show add product modal
+function showAddProductModal() {
+    currentProductId = null;
+    document.getElementById('modalTitle').textContent = 'Add Product';
+    document.getElementById('productForm').reset();
+    document.getElementById('productModal').style.display = 'block';
+}
+
+// Edit product
+function editProduct(id) {
+    const product = products.find(p => p.id === id);
+    if (!product) {
+        showNotification('Product not found', 'error');
+        return;
+    }
+
+    currentProductId = id;
+    document.getElementById('modalTitle').textContent = 'Edit Product';
+    document.getElementById('productName').value = product.name;
+    document.getElementById('productDescription').value = product.description || '';
+    document.getElementById('productPrice').value = product.price || '';
+    document.getElementById('productCategory').value = product.categoryId || '';
+    document.getElementById('productModal').style.display = 'block';
+}
+
+// Save product (create or update)
+function saveProduct(event) {
+    event.preventDefault();
+
+    const name = document.getElementById('productName').value.trim();
+    const description = document.getElementById('productDescription').value.trim();
+    const price = parseFloat(document.getElementById('productPrice').value);
+    const categoryId = parseInt(document.getElementById('productCategory').value) || null;
+
+    // Validation
+    if (!name) {
+        showNotification('Product name is required', 'error');
+        return;
+    }
+
+    if (isNaN(price) || price < 0) {
+        showNotification('Please enter a valid price', 'error');
+        return;
+    }
+
+    // Check for duplicate names (excluding current product when editing)
+    const duplicateProduct = products.find(p =>
+        p.name.toLowerCase() === name.toLowerCase() &&
+        p.id !== currentProductId
+    );
+
+    if (duplicateProduct) {
+        showNotification('Product name already exists', 'error');
+        return;
+    }
+
+    const productData = {
+        name,
+        description,
+        price,
+        categoryId
+    };
+
+    if (currentProductId) {
+        // Update existing product
+        const productIndex = products.findIndex(p => p.id === currentProductId);
+        if (productIndex !== -1) {
+            products[productIndex] = {
+                ...products[productIndex],
+                ...productData
+            };
+            showNotification('Product updated successfully', 'success');
+        }
+    } else {
+        // Create new product
+        const newProduct = {
+            id: Math.max(...products.map(p => p.id), 0) + 1,
+            ...productData
+        };
+        products.push(newProduct);
+        showNotification('Product created successfully', 'success');
+    }
+
+    saveProducts();
+    renderProductsTable();
+    closeModal();
+}
+
+// Delete product
+function deleteProduct(id) {
+    const product = products.find(p => p.id === id);
+    if (!product) {
+        showNotification('Product not found', 'error');
+        return;
+    }
+
+    if (!confirm(`Are you sure you want to delete "${product.name}"?`)) {
+        return;
+    }
+
+    products = products.filter(p => p.id !== id);
+    saveProducts();
+    renderProductsTable();
+    showNotification('Product deleted successfully', 'success');
+}
+
+// Filter products based on search and category
+function filterProducts() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const selectedCategoryId = parseInt(document.getElementById('categoryFilter').value) || null;
+
+    let filteredProducts = products;
+
+    // Filter by search term
+    if (searchTerm) {
+        filteredProducts = filteredProducts.filter(product =>
+            product.name.toLowerCase().includes(searchTerm) ||
+            (product.description && product.description.toLowerCase().includes(searchTerm))
+        );
+    }
+
+    // Filter by category
+    if (selectedCategoryId) {
+        filteredProducts = filteredProducts.filter(product =>
+            product.categoryId === selectedCategoryId
+        );
+    }
+
+    // Render filtered results
+    renderFilteredProducts(filteredProducts);
+}
+
+// Render filtered products
+function renderFilteredProducts(filteredProducts) {
+    const tbody = document.getElementById('productsTableBody');
+
+    if (filteredProducts.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No products match your search criteria</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = filteredProducts.map(product => {
+        const category = categories.find(c => c.id === product.categoryId);
+        return `
+            <tr>
+                <td>${product.id}</td>
+                <td>${escapeHtml(product.name)}</td>
+                <td>${escapeHtml(product.description || 'No description')}</td>
+                <td>$${product.price ? product.price.toFixed(2) : '0.00'}</td>
+                <td>${category ? escapeHtml(category.name) : 'Uncategorized'}</td>
+                <td class="actions">
+                    <button onclick="editProduct(${product.id})" class="btn btn-sm btn-primary" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button onclick="deleteProduct(${product.id})" class="btn btn-sm btn-danger" title="Delete">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// Close modal
+function closeModal() {
+    document.getElementById('productModal').style.display = 'none';
+    currentProductId = null;
+}
+
+// Utility function to escape HTML
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Show notification
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.textContent = message;
+
+    // Add styles for notification
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 12px 24px;
+        border-radius: 4px;
+        color: white;
+        font-weight: 500;
+        z-index: 10000;
+        opacity: 0;
+        transform: translateX(100px);
+        transition: all 0.3s ease;
+    `;
+
+    // Set background color based on type
+    switch (type) {
+        case 'success':
+            notification.style.backgroundColor = '#4CAF50';
+            break;
+        case 'error':
+            notification.style.backgroundColor = '#f44336';
+            break;
+        case 'warning':
+            notification.style.backgroundColor = '#ff9800';
+            break;
+        default:
+            notification.style.backgroundColor = '#2196F3';
+    }
+
+    // Add to page
+    document.body.appendChild(notification);
+
+    // Show notification
+    setTimeout(() => {
+        notification.style.opacity = '1';
+        notification.style.transform = 'translateX(0)';
+    }, 100);
+
+    // Remove notification after 3 seconds
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateX(100px)';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                document.body.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
+}
