@@ -1,5 +1,6 @@
-<!-- !TODO-->
-<!-- Fix login and logout-->
+<!--!TODO Delete the proxies in htm/js and insert working functions-->
+<!--!TODO Modify the frontend, so it looks good-->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,20 +12,8 @@
 </head>
 <body>
 <div class="container">
-  <!-- Header -->
-  <header class="header">
-    <div class="header-content">
-      <h1><i class="fas fa-boxes"></i> Product Management System</h1>
-      <div class="user-info">
-        <span id="currentUser">Welcome, User</span>
-        <button onclick="logout()" class="btn btn-secondary">
-          <i class="fas fa-sign-out-alt"></i> Logout
-        </button>
-      </div>
-    </div>
-  </header>
   <!-- Login Section -->
-  <div id="loginSection" class="login-section">
+  <div id="loginSection" class="login-section" style="display: none;">
     <div class="login-card">
       <h2><i class="fas fa-user-circle"></i> Login</h2>
       <form onsubmit="login(event)">
@@ -40,11 +29,25 @@
           <i class="fas fa-sign-in-alt"></i> Login
         </button>
       </form>
+      <div id="loginError" class="error-message" style="display: none;"></div>
     </div>
   </div>
 
   <!-- Main Dashboard -->
-  <div id="dashboard" class="dashboard" style="display: block;">
+
+  <div id="dashboard" class="dashboard" style="display: none;">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-content">
+        <h1><i class="fas fa-boxes"></i> Product Management System</h1>
+        <div class="user-info">
+          <span id="currentUser">Welcome, User</span>
+          <button onclick="logout()" class="btn btn-secondary">
+            <i class="fas fa-sign-out-alt"></i> Logout
+          </button>
+        </div>
+      </div>
+    </header>
     <!-- Navigation Menu -->
     <nav class="nav-menu">
       <div class="nav-section">
@@ -150,6 +153,6 @@
   </div>
 </div>
 
-<script src></script>
+<script src="app.js"></script>
 </body>
 </html>
