@@ -31,13 +31,13 @@ TODO:
 + fix the visual code presentation
 AFTER 7.05.2025.
 + fix database in app properties
-- fix dependencies in maven
++ fix dependencies in maven
 - create frontend
 - fix class diagram
 - update the folder structure
 - update diagram
 - delete unnecessary imports
 - fix gitignore (optional)
--Update !TODO
++ Update !TODO
 
 

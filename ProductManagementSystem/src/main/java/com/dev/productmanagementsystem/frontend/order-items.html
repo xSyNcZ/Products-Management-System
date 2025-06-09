@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Items - Product Management System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="container">
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <nav class="breadcrumb">
+                <a href="index.html">Dashboard</a> &gt; <span>Order Items Management</span>
+            </nav>
+            <h1><i class="fas fa-shopping-cart"></i> Order Items Management</h1>
+            <div class="user-info">
+                <span id="userRole" class="user-role"></span>
+                <span id="userName" class="user-name"></span>
+                <button id="logoutBtn" class="btn btn-secondary">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
+    </header>
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Filters Section -->
+        <section class="filters-section">
+            <div class="filters-container">
+                <div class="filter-group">
+                    <label for="orderFilter">Filter by Order:</label>
+                    <select id="orderFilter" class="form-select">
+                        <option value="">All Orders</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="productFilter">Filter by Product:</label>
+                    <select id="productFilter" class="form-select">
+                        <option value="">All Products</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="searchInput">Search:</label>
+                    <input type="text" id="searchInput" class="form-input" placeholder="Search order items...">
+                </div>
+                <button id="clearFilters" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Clear Filters
+                </button>
+            </div>
+        </section>
+
+        <!-- Actions Section -->
+        <section class="actions-section">
+            <div class="actions-container">
+                <button id="addOrderItemBtn" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add Order Item
+                </button>
+                <button id="refreshBtn" class="btn btn-secondary">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+                <div class="bulk-actions" style="display: none;">
+                    <button id="bulkDeleteBtn" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Delete Selected
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Order Items Table -->
+        <section class="table-section">
+            <div class="table-container">
+                <div class="table-header">
+                    <h3><i class="fas fa-list"></i> Order Items</h3>
+                    <div class="table-controls">
+                        <label>
+                            <input type="checkbox" id="selectAll"> Select All
+                        </label>
+                        <span id="itemCount" class="item-count">0 items</span>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table id="orderItemsTable" class="data-table">
+                        <thead>
+                        <tr>
+                            <th><input type="checkbox" id="selectAllHeader"></th>
+                            <th>ID</th>
+                            <th>Order ID</th>
+                            <th>Product</th>
+                            <th>Quantity</th>
+                            <th>Unit Price</th>
+                            <th>Total Price</th>
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody id="orderItemsTableBody">
+                        <!-- Table rows will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Loading indicator -->
+                <div id="loadingIndicator" class="loading-indicator">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                </div>
+
+                <!-- No data message -->
+                <div id="noDataMessage" class="no-data-message" style="display: none;">
+                    <i class="fas fa-inbox"></i>
+                    <p>No order items found</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Order Item Modal -->
+    <div id="orderItemModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle"><i class="fas fa-shopping-cart"></i> Add Order Item</h2>
+                <button class="modal-close" id="closeModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <form id="orderItemForm" class="modal-form">
+                <div class="form-group">
+                    <label for="orderId">Order *</label>
+                    <select id="orderId" name="orderId" class="form-select" required>
+                        <option value="">Select Order</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="productId">Product *</label>
+                    <select id="productId" name="productId" class="form-select" required>
+                        <option value="">Select Product</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="quantity">Quantity *</label>
+                    <input type="number" id="quantity" name="quantity" class="form-input"
+                           min="1" step="1" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="unitPrice">Unit Price *</label>
+                    <input type="number" id="unitPrice" name="unitPrice" class="form-input"
+                           min="0" step="0.01" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="totalPrice">Total Price</label>
+                    <input type="number" id="totalPrice" name="totalPrice" class="form-input"
+                           readonly>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" id="cancelBtn" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" id="saveBtn" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h3 id="confirmTitle">Confirm Action</h3>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage">Are you sure you want to perform this action?</p>
+            </div>
+            <div class="modal-actions">
+                <button id="confirmCancel" class="btn btn-secondary">Cancel</button>
+                <button id="confirmOk" class="btn btn-danger">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer" class="notification-container"></div>
+</div>
+
+<script src="order-items.js"></script>
+</body>
+</html>
