@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Warehouses - Product Management System</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="container">
+  <header class="main-header">
+    <nav class="breadcrumb">
+      <a href="index.html">Dashboard</a> > Warehouse Management
+    </nav>
+    <h1>Warehouse Management</h1>
+  </header>
+
+  <main>
+    <div class="controls">
+      <button id="createWarehouseBtn" class="btn btn-primary">Add Warehouse</button>
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Search warehouses...">
+        <button id="searchBtn" class="btn">Search</button>
+      </div>
+    </div>
+
+    <div class="warehouse-grid" id="warehousesGrid">
+      <!-- Warehouses will be loaded here -->
+    </div>
+
+    <!-- Create/Edit Warehouse Modal -->
+    <div id="warehouseModal" class="modal">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2 id="modalTitle">Add Warehouse</h2>
+        <form id="warehouseForm">
+          <div class="form-group">
+            <label for="name">Warehouse Name:</label>
+            <input type="text" id="name" name="name" required>
+          </div>
+
+          <div class="form-group">
+            <label for="location">Location:</label>
+            <input type="text" id="location" name="location" required>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save Warehouse</button>
+            <button type="button" class="btn btn-secondary" id="cancelBtn">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Warehouse Details Modal -->
+    <div id="warehouseDetailsModal" class="modal">
+      <div class="modal-content large">
+        <span class="close">&times;</span>
+        <h2 id="warehouseDetailsTitle">Warehouse Details</h2>
+        <div id="warehouseDetailsContent">
+          <!-- Warehouse details and stock movements will be loaded here -->
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-secondary close-details">Close</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="warehouses.js"></script>
+</body>
+</html>
