@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Invoices - Product Management System</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="container">
+  <header class="main-header">
+    <nav class="breadcrumb">
+      <a href="index.html">Dashboard</a> > Invoice Management
+    </nav>
+    <h1>Invoice Management</h1>
+  </header>
+
+  <main>
+    <div class="controls">
+      <button id="createInvoiceBtn" class="btn btn-primary">Create Invoice</button>
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Search invoices...">
+        <button id="searchBtn" class="btn">Search</button>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table id="invoicesTable">
+        <thead>
+        <tr>
+          <th>ID</th>
+          <th>Invoice Date</th>
+          <th>Total Amount</th>
+          <th>Order ID</th>
+          <th>Payment Status</th>
+          <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody id="invoicesTableBody">
+        <!-- Invoices will be loaded here -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Create/Edit Invoice Modal -->
+    <div id="invoiceModal" class="modal">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2 id="modalTitle">Create Invoice</h2>
+        <form id="invoiceForm">
+          <div class="form-group">
+            <label for="orderId">Order:</label>
+            <select id="orderId" name="orderId" required>
+              <option value="">Select Order</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="paymentId">Payment (Optional):</label>
+            <select id="paymentId" name="paymentId">
+              <option value="">Select Payment</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="totalAmount">Total Amount:</label>
+            <input type="number" id="totalAmount" name="totalAmount" step="0.01" required readonly>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save Invoice</button>
+            <button type="button" class="btn btn-secondary" id="cancelBtn">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Invoice Details Modal -->
+    <div id="invoiceDetailsModal" class="modal">
+      <div class="modal-content large">
+        <span class="close">&times;</span>
+        <h2>Invoice Details</h2>
+        <div id="invoiceDetailsContent">
+          <!-- Invoice details will be loaded here -->
+        </div>
+        <div class="form-actions">
+          <button id="printInvoiceBtn" class="btn btn-primary">Print Invoice</button>
+          <button class="btn btn-secondary close-details">Close</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="invoices.js"></script>
+</body>
+</html>

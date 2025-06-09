@@ -1,0 +1,344 @@
+classDiagram
+    %% Core entities
+    class User {
+        -Long id
+        -String username
+        -String email
+        -String password
+        -String firstName
+        -String lastName
+        -Role role
+        -boolean active
+        -LocalDateTime createdAt
+        -LocalDateTime updatedAt
+        +Long getId()
+        +String getUsername()
+        +void setUsername(String)
+        +String getEmail()
+        +void setEmail(String)
+        +String getPassword()
+        +void setPassword(String)
+        +String getFirstName()
+        +void setFirstName(String)
+        +String getLastName()
+        +void setLastName(String)
+        +Role getRole()
+        +void setRole(Role)
+        +boolean isActive()
+        +void setActive(boolean)
+        +LocalDateTime getCreatedAt()
+        +LocalDateTime getUpdatedAt()
+    }
+    
+    class Role {
+        -Long id
+        -String name
+        -Set~Permission~ permissions
+        +Long getId()
+        +String getName()
+        +void setName(String)
+        +Set~Permission~ getPermissions()
+        +void setPermissions(Set~Permission~)
+        +void addPermission(Permission)
+        +void removePermission(Permission)
+    }
+    
+    class Permission {
+        -Long id
+        -String name
+        -String description
+        +Long getId()
+        +String getName()
+        +void setName(String)
+        +String getDescription()
+        +void setDescription(String)
+    }
+    
+    class Product {
+        -Long id
+        -String name
+        -String description
+        -String sku
+        -BigDecimal price
+        -Category category
+        -Map~Warehouse, Integer~ stockQuantities
+        -LocalDateTime createdAt
+        -LocalDateTime updatedAt
+        +Long getId()
+        +String getName()
+        +void setName(String)
+        +String getDescription()
+        +void setDescription(String)
+        +String getSku()
+        +void setSku(String)
+        +BigDecimal getPrice()
+        +void setPrice(BigDecimal)
+        +Category getCategory()
+        +void setCategory(Category)
+        +Map~Warehouse, Integer~ getStockQuantities()
+        +Integer getTotalStock()
+        +void updateStock(Warehouse, Integer)
+        +LocalDateTime getCreatedAt()
+        +LocalDateTime getUpdatedAt()
+    }
+    
+    class Category {
+        -Long id
+        -String name
+        -String description
+        -Category parent
+        -Set~Category~ subCategories
+        +Long getId()
+        +String getName()
+        +void setName(String)
+        +String getDescription()
+        +void setDescription(String)
+        +Category getParent()
+        +void setParent(Category)
+        +Set~Category~ getSubCategories()
+        +void addSubCategory(Category)
+        +void removeSubCategory(Category)
+    }
+    
+    class Warehouse {
+        -Long id
+        -String name
+        -String location
+        -String address
+        -Double capacity
+        -User manager
+        -Set~User~ workers
+        +Long getId()
+        +String getName()
+        +void setName(String)
+        +String getLocation()
+        +void setLocation(String)
+        +String getAddress()
+        +void setAddress(String)
+        +Double getCapacity()
+        +void setCapacity(Double)
+        +User getManager()
+        +void setManager(User)
+        +Set~User~ getWorkers()
+        +void addWorker(User)
+        +void removeWorker(User)
+    }
+    
+    class Order {
+        -Long id
+        -String orderNumber
+        -User customer
+        -User salesManager
+        -OrderStatus status
+        -LocalDateTime orderDate
+        -LocalDateTime shippingDate
+        -LocalDateTime deliveryDate
+        -Set~OrderItem~ items
+        -Address shippingAddress
+        -Address billingAddress
+        -BigDecimal totalAmount
+        -Invoice invoice
+        +Long getId()
+        +String getOrderNumber()
+        +User getCustomer()
+        +void setCustomer(User)
+        +User getSalesManager()
+        +void setSalesManager(User)
+        +OrderStatus getStatus()
+        +void setStatus(OrderStatus)
+        +LocalDateTime getOrderDate()
+        +LocalDateTime getShippingDate()
+        +void setShippingDate(LocalDateTime)
+        +LocalDateTime getDeliveryDate()
+        +void setDeliveryDate(LocalDateTime)
+        +Set~OrderItem~ getItems()
+        +void addItem(OrderItem)
+        +void removeItem(OrderItem)
+        +Address getShippingAddress()
+        +void setShippingAddress(Address)
+        +Address getBillingAddress()
+        +void setBillingAddress(Address)
+        +BigDecimal getTotalAmount()
+        +Invoice getInvoice()
+        +void setInvoice(Invoice)
+    }
+    
+    class OrderItem {
+        -Long id
+        -Order order
+        -Product product
+        -Integer quantity
+        -BigDecimal pricePerUnit
+        -Warehouse sourceWarehouse
+        +Long getId()
+        +Order getOrder()
+        +void setOrder(Order)
+        +Product getProduct()
+        +void setProduct(Product)
+        +Integer getQuantity()
+        +void setQuantity(Integer)
+        +BigDecimal getPricePerUnit()
+        +void setPricePerUnit(BigDecimal)
+        +Warehouse getSourceWarehouse()
+        +void setSourceWarehouse(Warehouse)
+        +BigDecimal getTotalPrice()
+    }
+    
+    class Invoice {
+        -Long id
+        -String invoiceNumber
+        -Order order
+        -User accountant
+        -LocalDateTime issueDate
+        -LocalDateTime dueDate
+        -BigDecimal totalAmount
+        -BigDecimal tax
+        -PaymentStatus paymentStatus
+        -Set~Payment~ payments
+        +Long getId()
+        +String getInvoiceNumber()
+        +Order getOrder()
+        +void setOrder(Order)
+        +User getAccountant()
+        +void setAccountant(User)
+        +LocalDateTime getIssueDate()
+        +LocalDateTime getDueDate()
+        +void setDueDate(LocalDateTime)
+        +BigDecimal getTotalAmount()
+        +BigDecimal getTax()
+        +void setTax(BigDecimal)
+        +PaymentStatus getPaymentStatus()
+        +void setPaymentStatus(PaymentStatus)
+        +Set~Payment~ getPayments()
+        +void addPayment(Payment)
+        +BigDecimal getRemainingAmount()
+    }
+    
+    class Payment {
+        -Long id
+        -Invoice invoice
+        -BigDecimal amount
+        -PaymentMethod method
+        -LocalDateTime paymentDate
+        -String transactionId
+        -String notes
+        +Long getId()
+        +Invoice getInvoice()
+        +void setInvoice(Invoice)
+        +BigDecimal getAmount()
+        +void setAmount(BigDecimal)
+        +PaymentMethod getMethod()
+        +void setMethod(PaymentMethod)
+        +LocalDateTime getPaymentDate()
+        +String getTransactionId()
+        +void setTransactionId(String)
+        +String getNotes()
+        +void setNotes(String)
+    }
+    
+    class StockMovement {
+        -Long id
+        -Product product
+        -Warehouse sourceWarehouse
+        -Warehouse destinationWarehouse
+        -Integer quantity
+        -User initiatedBy
+        -LocalDateTime movementDate
+        -MovementStatus status
+        -String notes
+        +Long getId()
+        +Product getProduct()
+        +void setProduct(Product)
+        +Warehouse getSourceWarehouse()
+        +void setSourceWarehouse(Warehouse)
+        +Warehouse getDestinationWarehouse()
+        +void setDestinationWarehouse(Warehouse)
+        +Integer getQuantity()
+        +void setQuantity(Integer)
+        +User getInitiatedBy()
+        +void setInitiatedBy(User)
+        +LocalDateTime getMovementDate()
+        +MovementStatus getStatus()
+        +void setStatus(MovementStatus)
+        +String getNotes()
+        +void setNotes(String)
+    }
+    
+    class Address {
+        -Long id
+        -String street
+        -String city
+        -String state
+        -String postalCode
+        -String country
+        -String phoneNumber
+        +Long getId()
+        +String getStreet()
+        +void setStreet(String)
+        +String getCity()
+        +void setCity(String)
+        +String getState()
+        +void setState(String)
+        +String getPostalCode()
+        +void setPostalCode(String)
+        +String getCountry()
+        +void setCountry(String)
+        +String getPhoneNumber()
+        +void setPhoneNumber(String)
+    }
+    
+    %% Enums
+    class OrderStatus {
+        <<enumeration>>
+        PENDING
+        APPROVED
+        PROCESSING
+        SHIPPED
+        DELIVERED
+        CANCELLED
+    }
+    
+    class PaymentStatus {
+        <<enumeration>>
+        PENDING
+        PARTIAL
+        PAID
+        OVERDUE
+        REFUNDED
+        CANCELLED
+    }
+    
+    class PaymentMethod {
+        <<enumeration>>
+        CREDIT_CARD
+        BANK_TRANSFER
+        CASH
+        CHECK
+        PAYPAL
+        OTHER
+    }
+    
+    class MovementStatus {
+        <<enumeration>>
+        PLANNED
+        IN_PROGRESS
+        COMPLETED
+        CANCELLED
+    }
+    
+    %% Relations
+    User "1" -- "1..*" Role : has
+    Role "1" -- "0..*" Permission : contains
+    Category "0..1" -- "0..*" Category : has
+    Product "1" -- "1" Category : belongs to
+    Warehouse "1" -- "0..*" User : managed by
+    Warehouse "1" -- "0..*" User : has workers
+    Order "1" -- "1..*" OrderItem : contains
+    Order "1" -- "0..1" Invoice : has
+    OrderItem "1" -- "1" Product : references
+    OrderItem "1" -- "1" Warehouse : sourced from
+    Invoice "1" -- "0..*" Payment : receives
+    StockMovement "1" -- "1" Product : involves
+    StockMovement "1" -- "0..1" Warehouse : source
+    StockMovement "1" -- "1" Warehouse : destination
+    StockMovement "1" -- "1" User : initiated by

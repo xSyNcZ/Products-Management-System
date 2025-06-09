@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Movement - PMS</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .stock-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .stock-filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stock-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .stock-table th,
+        .stock-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .stock-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+
+        .movement-type {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .movement-in { background: #d4edda; color: #155724; }
+        .movement-out { background: #f8d7da; color: #721c24; }
+        .movement-transfer { background: #d1ecf1; color: #0c5460; }
+
+        .quantity-positive { color: #28a745; font-weight: 600; }
+        .quantity-negative { color: #dc3545; font-weight: 600; }
+
+        .stock-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .summary-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .summary-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .summary-label {
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .movement-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background: white;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 600px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <nav class="breadcrumb">
+        <a href="index.html">Dashboard</a> &gt; <span>Stock Movement</span>
+    </nav>
+
+    <div class="stock-header">
+        <h1>Stock Movement Management</h1>
+        <button class="btn btn-primary" onclick="showCreateMovementModal()">Record Movement</button>
+    </div>
+
+    <div class="stock-summary">
+        <div class="summary-card">
+            <div class="summary-value" id="totalMovements">0</div>
+            <div class="summary-label">Total Movements</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-value" id="movementsToday">0</div>
+            <div class="summary-label">Today's Movements</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-value" id="totalQuantityIn">0</div>
+            <div class="summary-label">Quantity In</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-value" id="totalQuantityOut">0</div>
+            <div class="summary-label">Quantity Out</div>
+        </div>
+    </div>
+
+    <div class="stock-filters">
+        <select id="warehouseFilter" onchange="filterMovements()">
+            <option value="">All Warehouses</option>
+            <!-- Warehouses will be loaded here -->
+        </select>
+
+        <select id="productFilter" onchange="filterMovements()">
+            <option value="">All Products</option>
+            <!-- Products will be loaded here -->
+        </select>
+
+        <select id="statusFilter" onchange="filterMovements()">
+            <option value="">All Statuses</option>
+            <option value="CREATED">Created</option>
+            <option value="PROCESSING">Processing</option>
+            <option value="SHIPPED">Shipped</option>
+            <option value="DELIVERED">Delivered</option>
+            <option value="CANCELLED">Cancelled</option>
+            <option value="RETURNED">Returned</option>
+        </select>
+
+        <input type="date" id="dateFromFilter" onchange="filterMovements()" placeholder="From Date">
+        <input type="date" id="dateToFilter" onchange="filterMovements()" placeholder="To Date">
+
+        <button class="btn btn-secondary" onclick="resetFilters()">Reset Filters</button>
+    </div>
+
+    <div class="table-container">
+        <table class="stock-table">
+            <thead>
+            <tr>
+                <th>Movement ID</th>
+                <th>Product</th>
+                <th>Warehouse</th>
+                <th>Quantity</th>
+                <th>Status</th>
+                <th>Movement Date</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody id="movementsTableBody">
+            <!-- Movements will be loaded here -->
+            </tbody>
+        </table>
+    </div>
+
+    <div class="pagination" id="movementsPagination">
+        <!-- Pagination will be added here -->
+    </div>
+</div>
+
+<!-- Create Movement Modal -->
+<div id="createMovementModal" class="movement-modal">
+    <div class="modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2>Record Stock Movement</h2>
+            <span class="close" onclick="closeCreateMovementModal()">&times;</span>
+        </div>
+
+        <form id="createMovementForm">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="movementProductId">Product:</label>
+                    <select id="movementProductId" required>
+                        <option value="">Select Product</option>
+                        <!-- Products will be loaded here -->
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="movementWarehouseId">Warehouse:</label>
+                    <select id="movementWarehouseId" required>
+                        <option value="">Select Warehouse</option>
+                        <!-- Warehouses will be loaded here -->
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="movementQuantity">Quantity:</label>
+                    <input type="number" id="movementQuantity" step="0.01" required>
+                    <small>Use positive numbers for stock in, negative for stock out</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="movementStatus">Status:</label>
+                    <select id="movementStatus" required>
+                        <option value="CREATED">Created</option>
+                        <option value="PROCESSING">Processing</option>
+                        <option value="DELIVERED">Delivered</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="movementDate">Movement Date:</label>
+                <input type="datetime-local" id="movementDate" required>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Record Movement</button>
+                <button type="button" class="btn btn-secondary" onclick="closeCreateMovementModal()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="stock-movement.js"></script>
+</body>
+</html>

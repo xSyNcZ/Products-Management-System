@@ -1,0 +1,160 @@
+<!--!TODO Add: products.js, roles.html, permissions.html, roles.js, permissions.js-->
+<!--!TODO Modify the frontend, so it looks good-->
+<!--!TODO Delete the proxies in htm/js and insert working functions-->
+<!--!TODO Integrate fully with backend-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Management System</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container">
+  <!-- Login Section -->
+  <div id="loginSection" class="login-section" style="display: none;">
+    <div class="login-card">
+      <h2><i class="fas fa-user-circle"></i> Login</h2>
+      <form onsubmit="login(event)">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" required>
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" required>
+        </div>
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-sign-in-alt"></i> Login
+        </button>
+      </form>
+      <div id="loginError" class="error-message" style="display: none;"></div>
+    </div>
+  </div>
+
+  <!-- Main Dashboard -->
+
+  <div id="dashboard" class="dashboard" style="display: none;">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-content">
+        <h1><i class="fas fa-boxes"></i> Product Management System</h1>
+        <div class="user-info">
+          <span id="currentUser">Welcome, User</span>
+          <button onclick="logout()" class="btn btn-secondary">
+            <i class="fas fa-sign-out-alt"></i> Logout
+          </button>
+        </div>
+      </div>
+    </header>
+    <!-- Navigation Menu -->
+    <nav class="nav-menu">
+      <div class="nav-section">
+        <h3><i class="fas fa-tachometer-alt"></i> Dashboard</h3>
+        <ul>
+          <li><a href="#" onclick="showDashboard()"><i class="fas fa-home"></i> Overview</a></li>
+        </ul>
+      </div>
+
+      <div class="nav-section" id="masterDataSection">
+        <h3><i class="fas fa-database"></i> Master Data</h3>
+        <ul>
+          <li><a href="products.html"><i class="fas fa-box"></i> Products</a></li>
+          <li><a href="categories.html"><i class="fas fa-tags"></i> Categories</a></li>
+          <li><a href="warehouses.html"><i class="fas fa-warehouse"></i> Warehouses</a></li>
+        </ul>
+      </div>
+
+      <div class="nav-section" id="ordersSection">
+        <h3><i class="fas fa-shopping-cart"></i> Orders</h3>
+        <ul>
+          <li><a href="orders.html"><i class="fas fa-list"></i> Order Management</a></li>
+          <li><a href="order-items.html"><i class="fas fa-clipboard-list"></i> Order Items</a></li>
+        </ul>
+      </div>
+
+      <div class="nav-section" id="inventorySection">
+        <h3><i class="fas fa-cubes"></i> Inventory</h3>
+        <ul>
+          <li><a href="stock-movement.html"><i class="fas fa-exchange-alt"></i> Stock Movements</a></li>
+        </ul>
+      </div>
+
+      <div class="nav-section" id="financialSection">
+        <h3><i class="fas fa-dollar-sign"></i> Financial</h3>
+        <ul>
+          <li><a href="invoices.html"><i class="fas fa-file-invoice"></i> Invoices</a></li>
+          <li><a href="payments.html"><i class="fas fa-credit-card"></i> Payments</a></li>
+        </ul>
+      </div>
+
+      <div class="nav-section" id="adminSection" style="display: none;">
+        <h3><i class="fas fa-users-cog"></i> Administration</h3>
+        <ul>
+          <li><a href="users.html"><i class="fas fa-users"></i> Users</a></li>
+          <li><a href="roles.html"><i class="fas fa-user-tag"></i> Roles</a></li>
+          <li><a href="permissions.html"><i class="fas fa-key"></i> Permissions</a></li>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- Dashboard Content -->
+    <div class="dashboard-content">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-box"></i>
+          </div>
+          <div class="stat-info">
+            <h3 id="totalProducts">0</h3>
+            <p>Total Products</p>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-shopping-cart"></i>
+          </div>
+          <div class="stat-info">
+            <h3 id="totalOrders">0</h3>
+            <p>Total Orders</p>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-warehouse"></i>
+          </div>
+          <div class="stat-info">
+            <h3 id="totalWarehouses">0</h3>
+            <p>Warehouses</p>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-users"></i>
+          </div>
+          <div class="stat-info">
+            <h3 id="totalUsers">0</h3>
+            <p>Users</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="recent-activities">
+        <h3><i class="fas fa-clock"></i> Recent Activities</h3>
+        <div id="recentActivities" class="activity-list">
+          <!-- Activities will be loaded here -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

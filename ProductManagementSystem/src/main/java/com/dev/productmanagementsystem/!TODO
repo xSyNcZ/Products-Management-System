@@ -6,14 +6,38 @@ TODO:
 +update dependencies
 +update application.properties (may have an issue with critical data so currently ignore this)
 +add GitIgnore
--add DTO
--add Repositories
--Verify the code whether it has everything that has been declared in the class diagram
--Check what's going on with these enums(and whether are they necessary)
--Make necessary updates to the classes creating all the methods that are needed according to the diagram
--Make each and every function work (at least in theory)
--Check for errors and fix them
--delete unnecessary imports
--fix gitignore
-?(Optional)Make provisional frontend in order to check whether all the things work
--Update !TODO
++add DTO
++Verify the code whether it has everything that has been declared in the class diagram
++Check what's going on with these enums(and whether are they necessary)
++Make class updates
++Make necessary updates to the classes creating all the methods that are needed according to the diagram
++Check for errors and fix them (DTO)
++add Repositories
++fix repositories
++fix issue with dependencies (ask the Lecturer about this)
++add services
++verify services
++fix services
++verify repositories
++fix repositories
++ask about the class diagram and services ("do we have to put the services with methods and repositories into class diagram?")
++ verify/add controllers (verify whether we have them already or we have to implement them)(i think they are needed for the frontend)
++ fix controllers
++think of any additional functionalities of the program and add ideas in the text file
++ implement the methods (that are missing/should be there or anything like that)
++delete unused methods
++ delete unused dependencies
++ Make each and every function work (at least in theory, kinda like a "fix" step)
++ fix the visual code presentation
+AFTER 7.05.2025.
++ fix database in app properties
++ fix dependencies in maven
+- create frontend
+- fix class diagram
+- update the folder structure
+- update diagram
+- delete unnecessary imports
+- fix gitignore (optional)
++ Update !TODO
+
+

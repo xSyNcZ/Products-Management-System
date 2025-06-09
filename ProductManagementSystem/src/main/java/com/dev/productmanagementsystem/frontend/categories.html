@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Category Management - Product Management System</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="container">
+  <header class="main-header">
+    <nav class="breadcrumb">
+      <a href="index.html">Dashboard</a> > Category Management
+    </nav>
+    <h1><i class="fas fa-tags"></i>Category Management</h1>
+    <div class="user-info">
+      <span id="currentUser">Admin User</span>
+      <button onclick="logout()" class="btn btn-secondary">Logout</button>
+    </div>
+  </header>
+
+  <div class="content-area">
+    <div class="toolbar">
+      <button onclick="showCreateCategoryModal()" class="btn btn-primary">Create Category</button>
+      <button onclick="refreshCategories()" class="btn btn-secondary">Refresh</button>
+      <div class="search-box">
+        <input type="text" id="categorySearch" placeholder="Search categories..." onkeyup="filterCategories()">
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table id="categoriesTable" class="data-table">
+        <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Description</th>
+          <th>Product Count</th>
+          <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody id="categoriesTableBody">
+        <!-- Categories will be loaded here -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Create/Edit Category Modal -->
+<div id="categoryModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="modalTitle">Create Category</h3>
+      <span class="close" onclick="closeCategoryModal()">&times;</span>
+    </div>
+    <form id="categoryForm">
+      <div class="form-group">
+        <label for="categoryName">Name:</label>
+        <input type="text" id="categoryName" name="name" required>
+      </div>
+      <div class="form-group">
+        <label for="categoryDescription">Description:</label>
+        <textarea id="categoryDescription" name="description" rows="4"></textarea>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Save</button>
+        <button type="button" onclick="closeCategoryModal()" class="btn btn-secondary">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Category Products Modal -->
+<div id="productsModal" class="modal">
+  <div class="modal-content modal-large">
+    <div class="modal-header">
+      <h3 id="productsModalTitle">Category Products</h3>
+      <span class="close" onclick="closeProductsModal()">&times;</span>
+    </div>
+    <div class="modal-body">
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Price</th>
+            <th>Description</th>
+            <th>Actions</th>
+          </tr>
+          </thead>
+          <tbody id="categoryProductsBody">
+          <!-- Products will be loaded here -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="categories.js"></script>
+</body>
+</html>
