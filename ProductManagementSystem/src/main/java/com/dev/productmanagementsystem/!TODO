@@ -32,7 +32,12 @@ TODO:
 AFTER 7.05.2025.
 + fix database in app properties
 + fix dependencies in maven
-- create frontend
++ create frontend
+- auth controller
+- update controllers
+- update services
+- update init app
+- make it work
 - fix class diagram
 - update the folder structure
 - update diagram
