@@ -4,13 +4,19 @@ class WarehouseManager {
         this.apiUrl = '/api/warehouses';
         this.stockMovementApiUrl = '/api/stock-movements';
         this.currentWarehouse = null;
+        this.warehouses = [];
         this.userRole = this.getUserRole();
         this.init();
     }
 
     getUserRole() {
-        const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-        return user.roles?.[0]?.name || 'USER';
+        try {
+            const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            return user.roles?.[0]?.name || 'USER';
+        } catch (error) {
+            console.error('Error parsing user data:', error);
+            return 'USER';
+        }
     }
 
     init() {
@@ -23,54 +29,95 @@ class WarehouseManager {
         const isAdmin = this.userRole === 'ADMIN';
         const createBtn = document.getElementById('createWarehouseBtn');
 
-        if (!isAdmin) {
+        if (createBtn && !isAdmin) {
             createBtn.style.display = 'none';
         }
     }
 
     bindEvents() {
         // Create warehouse button
-        document.getElementById('createWarehouseBtn').addEventListener('click', () => {
-            this.openWarehouseModal();
-        });
+        const createBtn = document.getElementById('createWarehouseBtn');
+        if (createBtn) {
+            createBtn.addEventListener('click', () => {
+                this.openWarehouseModal();
+            });
+        }
 
         // Search functionality
-        document.getElementById('searchBtn').addEventListener('click', () => {
-            this.searchWarehouses();
-        });
+        const searchBtn = document.getElementById('searchBtn');
+        const searchInput = document.getElementById('searchInput');
 
-        document.getElementById('searchInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
+        if (searchBtn) {
+            searchBtn.addEventListener('click', () => {
                 this.searchWarehouses();
-            }
-        });
+            });
+        }
+
+        if (searchInput) {
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.searchWarehouses();
+                }
+            });
+        }
 
         // Modal events
-        document.querySelector('#warehouseModal .close').addEventListener('click', () => {
-            this.closeModal('warehouseModal');
-        });
+        const warehouseModalClose = document.querySelector('#warehouseModal .close');
+        if (warehouseModalClose) {
+            warehouseModalClose.addEventListener('click', () => {
+                this.closeModal('warehouseModal');
+            });
+        }
 
-        document.getElementById('cancelBtn').addEventListener('click', () => {
-            this.closeModal('warehouseModal');
-        });
+        const cancelBtn = document.getElementById('cancelBtn');
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => {
+                this.closeModal('warehouseModal');
+            });
+        }
 
-        document.querySelector('#warehouseDetailsModal .close').addEventListener('click', () => {
-            this.closeModal('warehouseDetailsModal');
-        });
+        const detailsModalClose = document.querySelector('#warehouseDetailsModal .close');
+        if (detailsModalClose) {
+            detailsModalClose.addEventListener('click', () => {
+                this.closeModal('warehouseDetailsModal');
+            });
+        }
 
-        document.querySelector('.close-details').addEventListener('click', () => {
-            this.closeModal('warehouseDetailsModal');
-        });
+        const closeDetailsBtn = document.querySelector('.close-details');
+        if (closeDetailsBtn) {
+            closeDetailsBtn.addEventListener('click', () => {
+                this.closeModal('warehouseDetailsModal');
+            });
+        }
 
         // Form submission
-        document.getElementById('warehouseForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.saveWarehouse();
-        });
+        const warehouseForm = document.getElementById('warehouseForm');
+        if (warehouseForm) {
+            warehouseForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.saveWarehouse();
+            });
+        }
 
-        // Logout
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            this.logout();
+        // Logout - check if button exists first
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+                this.logout();
+            });
+        }
+
+        // Close modals when clicking outside
+        window.addEventListener('click', (e) => {
+            const warehouseModal = document.getElementById('warehouseModal');
+            const detailsModal = document.getElementById('warehouseDetailsModal');
+
+            if (e.target === warehouseModal) {
+                this.closeModal('warehouseModal');
+            }
+            if (e.target === detailsModal) {
+                this.closeModal('warehouseDetailsModal');
+            }
         });
     }
 
@@ -80,31 +127,52 @@ class WarehouseManager {
                 headers: this.getAuthHeaders()
             });
 
-            if (!response.ok) throw new Error('Failed to load warehouses');
+            if (response.status === 401) {
+                this.handleUnauthorized();
+                return;
+            }
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
 
             const warehouses = await response.json();
-            this.warehouses = warehouses;
-            this.displayWarehouses(warehouses);
+            this.warehouses = Array.isArray(warehouses) ? warehouses : [];
+            this.displayWarehouses(this.warehouses);
         } catch (error) {
             console.error('Error loading warehouses:', error);
-            this.showError('Failed to load warehouses');
+            this.showError('Failed to load warehouses. Please try again.');
+            this.warehouses = [];
+            this.displayWarehouses([]);
         }
     }
 
     displayWarehouses(warehouses) {
         const grid = document.getElementById('warehousesGrid');
+        if (!grid) {
+            console.error('Warehouses grid element not found');
+            return;
+        }
+
         grid.innerHTML = '';
 
+        if (!warehouses || warehouses.length === 0) {
+            grid.innerHTML = '<div class="no-results">No warehouses found.</div>';
+            return;
+        }
+
         warehouses.forEach(warehouse => {
+            if (!warehouse) return;
+
             const card = document.createElement('div');
             card.className = 'warehouse-card';
             card.innerHTML = `
                 <div class="warehouse-header">
-                    <h3>${warehouse.name}</h3>
-                    <span class="warehouse-id">#${warehouse.id}</span>
+                    <h3>${this.escapeHtml(warehouse.name || 'Unnamed Warehouse')}</h3>
+                    <span class="warehouse-id">#${warehouse.id || 'N/A'}</span>
                 </div>
                 <div class="warehouse-info">
-                    <p><strong>Location:</strong> ${warehouse.location}</p>
+                    <p><strong>Location:</strong> ${this.escapeHtml(warehouse.location || 'Unknown')}</p>
                     <p><strong>Stock Movements:</strong> ${warehouse.stockMovements?.length || 0}</p>
                 </div>
                 <div class="warehouse-actions">
@@ -131,23 +199,48 @@ class WarehouseManager {
         const title = document.getElementById('modalTitle');
         const form = document.getElementById('warehouseForm');
 
+        if (!modal || !title || !form) {
+            console.error('Modal elements not found');
+            return;
+        }
+
         title.textContent = warehouse ? 'Edit Warehouse' : 'Add Warehouse';
         form.reset();
 
         if (warehouse) {
-            document.getElementById('name').value = warehouse.name || '';
-            document.getElementById('location').value = warehouse.location || '';
+            const nameInput = document.getElementById('name');
+            const locationInput = document.getElementById('location');
+
+            if (nameInput) nameInput.value = warehouse.name || '';
+            if (locationInput) locationInput.value = warehouse.location || '';
         }
 
         modal.style.display = 'block';
     }
 
     async saveWarehouse() {
-        const formData = new FormData(document.getElementById('warehouseForm'));
-        const warehouseData = {
-            name: formData.get('name'),
-            location: formData.get('location')
-        };
+        const form = document.getElementById('warehouseForm');
+        if (!form) {
+            this.showError('Form not found');
+            return;
+        }
+
+        const formData = new FormData(form);
+        const name = formData.get('name')?.toString().trim();
+        const location = formData.get('location')?.toString().trim();
+
+        // Validation
+        if (!name) {
+            this.showError('Warehouse name is required');
+            return;
+        }
+
+        if (!location) {
+            this.showError('Location is required');
+            return;
+        }
+
+        const warehouseData = { name, location };
 
         try {
             const url = this.currentWarehouse ?
@@ -165,22 +258,44 @@ class WarehouseManager {
                 body: JSON.stringify(warehouseData)
             });
 
-            if (!response.ok) throw new Error('Failed to save warehouse');
+            if (response.status === 401) {
+                this.handleUnauthorized();
+                return;
+            }
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            }
 
             this.closeModal('warehouseModal');
-            this.loadWarehouses();
+            await this.loadWarehouses();
             this.showSuccess(this.currentWarehouse ? 'Warehouse updated successfully' : 'Warehouse created successfully');
         } catch (error) {
             console.error('Error saving warehouse:', error);
-            this.showError('Failed to save warehouse');
+            this.showError('Failed to save warehouse: ' + error.message);
         }
     }
 
     async editWarehouse(id) {
+        if (!id) {
+            this.showError('Invalid warehouse ID');
+            return;
+        }
+
         try {
             const response = await fetch(`${this.apiUrl}/${id}`, {
                 headers: this.getAuthHeaders()
             });
+
+            if (response.status === 401) {
+                this.handleUnauthorized();
+                return;
+            }
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
 
             const warehouse = await response.json();
             this.openWarehouseModal(warehouse);
@@ -191,6 +306,11 @@ class WarehouseManager {
     }
 
     async viewWarehouse(id) {
+        if (!id) {
+            this.showError('Invalid warehouse ID');
+            return;
+        }
+
         try {
             const [warehouseResponse, stockMovementsResponse] = await Promise.all([
                 fetch(`${this.apiUrl}/${id}`, {
@@ -201,8 +321,23 @@ class WarehouseManager {
                 })
             ]);
 
+            if (warehouseResponse.status === 401 || stockMovementsResponse.status === 401) {
+                this.handleUnauthorized();
+                return;
+            }
+
+            if (!warehouseResponse.ok) {
+                throw new Error(`Failed to load warehouse: ${warehouseResponse.status}`);
+            }
+
             const warehouse = await warehouseResponse.json();
-            const stockMovements = await stockMovementsResponse.json();
+            let stockMovements = [];
+
+            if (stockMovementsResponse.ok) {
+                stockMovements = await stockMovementsResponse.json();
+            } else {
+                console.warn('Failed to load stock movements');
+            }
 
             this.displayWarehouseDetails(warehouse, stockMovements);
         } catch (error) {
@@ -214,19 +349,25 @@ class WarehouseManager {
     displayWarehouseDetails(warehouse, stockMovements) {
         const content = document.getElementById('warehouseDetailsContent');
         const title = document.getElementById('warehouseDetailsTitle');
+        const modal = document.getElementById('warehouseDetailsModal');
 
-        title.textContent = `${warehouse.name} - Details`;
+        if (!content || !title || !modal) {
+            console.error('Details modal elements not found');
+            return;
+        }
+
+        title.textContent = `${warehouse.name || 'Warehouse'} - Details`;
 
         // Calculate stock summary
-        const stockSummary = this.calculateStockSummary(stockMovements);
+        const stockSummary = this.calculateStockSummary(stockMovements || []);
 
         content.innerHTML = `
             <div class="warehouse-details">
                 <div class="warehouse-info-section">
                     <h3>Warehouse Information</h3>
-                    <p><strong>ID:</strong> ${warehouse.id}</p>
-                    <p><strong>Name:</strong> ${warehouse.name}</p>
-                    <p><strong>Location:</strong> ${warehouse.location}</p>
+                    <p><strong>ID:</strong> ${warehouse.id || 'N/A'}</p>
+                    <p><strong>Name:</strong> ${this.escapeHtml(warehouse.name || 'N/A')}</p>
+                    <p><strong>Location:</strong> ${this.escapeHtml(warehouse.location || 'N/A')}</p>
                 </div>
 
                 <div class="stock-summary-section">
@@ -242,7 +383,7 @@ class WarehouseManager {
                         </div>
                         <div class="metric-card">
                             <h4>Total Movements</h4>
-                            <span class="metric-value">${stockMovements.length}</span>
+                            <span class="metric-value">${(stockMovements || []).length}</span>
                         </div>
                     </div>
                 </div>
@@ -260,13 +401,13 @@ class WarehouseManager {
                                 </tr>
                             </thead>
                             <tbody>
-                                ${stockMovements.slice(0, 10).map(movement => `
+                                ${(stockMovements || []).slice(0, 10).map(movement => `
                                     <tr>
                                         <td>${this.formatDateTime(movement.movementDate)}</td>
-                                        <td>${movement.product?.name || 'Unknown Product'}</td>
-                                        <td>${movement.quantity}</td>
+                                        <td>${this.escapeHtml(movement.product?.name || 'Unknown Product')}</td>
+                                        <td>${movement.quantity || 0}</td>
                                         <td>
-                                            <span class="status-badge ${movement.movementStatus?.toLowerCase() || 'other'}">
+                                            <span class="status-badge ${(movement.movementStatus || 'other').toLowerCase()}">
                                                 ${movement.movementStatus || 'OTHER'}
                                             </span>
                                         </td>
@@ -275,25 +416,32 @@ class WarehouseManager {
                             </tbody>
                         </table>
                     </div>
-                    ${stockMovements.length > 10 ? `
+                    ${(stockMovements || []).length > 10 ? `
                         <p class="text-muted">Showing 10 of ${stockMovements.length} movements</p>
+                    ` : ''}
+                    ${(stockMovements || []).length === 0 ? `
+                        <p class="text-muted">No stock movements found</p>
                     ` : ''}
                 </div>
             </div>
         `;
 
-        document.getElementById('warehouseDetailsModal').style.display = 'block';
+        modal.style.display = 'block';
     }
 
     calculateStockSummary(stockMovements) {
         const productSet = new Set();
         let totalQuantity = 0;
 
+        if (!Array.isArray(stockMovements)) {
+            return { totalProducts: 0, totalQuantity: 0 };
+        }
+
         stockMovements.forEach(movement => {
-            if (movement.product?.id) {
+            if (movement?.product?.id) {
                 productSet.add(movement.product.id);
             }
-            if (movement.quantity) {
+            if (movement?.quantity && typeof movement.quantity === 'number') {
                 totalQuantity += movement.quantity;
             }
         });
@@ -305,6 +453,11 @@ class WarehouseManager {
     }
 
     async deleteWarehouse(id) {
+        if (!id) {
+            this.showError('Invalid warehouse ID');
+            return;
+        }
+
         if (!confirm('Are you sure you want to delete this warehouse? This action cannot be undone.')) {
             return;
         }
@@ -315,35 +468,66 @@ class WarehouseManager {
                 headers: this.getAuthHeaders()
             });
 
-            if (!response.ok) throw new Error('Failed to delete warehouse');
+            if (response.status === 401) {
+                this.handleUnauthorized();
+                return;
+            }
 
-            this.loadWarehouses();
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            }
+
+            await this.loadWarehouses();
             this.showSuccess('Warehouse deleted successfully');
         } catch (error) {
             console.error('Error deleting warehouse:', error);
-            this.showError('Failed to delete warehouse');
+            this.showError('Failed to delete warehouse: ' + error.message);
         }
     }
 
     searchWarehouses() {
-        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const searchInput = document.getElementById('searchInput');
+        if (!searchInput) return;
+
+        const searchTerm = searchInput.value.toLowerCase().trim();
+
+        if (!searchTerm) {
+            this.displayWarehouses(this.warehouses);
+            return;
+        }
 
         const filteredWarehouses = this.warehouses.filter(warehouse => {
-            return warehouse.name?.toLowerCase().includes(searchTerm) ||
-                warehouse.location?.toLowerCase().includes(searchTerm) ||
-                warehouse.id.toString().includes(searchTerm);
+            return warehouse?.name?.toLowerCase().includes(searchTerm) ||
+                warehouse?.location?.toLowerCase().includes(searchTerm) ||
+                warehouse?.id?.toString().includes(searchTerm);
         });
 
         this.displayWarehouses(filteredWarehouses);
     }
 
     closeModal(modalId) {
-        document.getElementById(modalId).style.display = 'none';
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.style.display = 'none';
+        }
     }
 
     formatDateTime(dateString) {
         if (!dateString) return 'N/A';
-        return new Date(dateString).toLocaleString();
+        try {
+            return new Date(dateString).toLocaleString();
+        } catch (error) {
+            console.error('Error formatting date:', error);
+            return 'Invalid Date';
+        }
+    }
+
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     getAuthHeaders() {
@@ -354,12 +538,19 @@ class WarehouseManager {
         };
     }
 
+    handleUnauthorized() {
+        console.warn('Unauthorized access - redirecting to login');
+        this.logout();
+    }
+
     showSuccess(message) {
+        // Replace with a better notification system if available
         alert(message);
     }
 
     showError(message) {
-        alert(message);
+        // Replace with a better notification system if available
+        alert('Error: ' + message);
     }
 
     logout() {

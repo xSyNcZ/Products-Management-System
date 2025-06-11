@@ -1,371 +1,716 @@
 // User Management JavaScript
-let currentUser = null;
-let editingUserId = null;
-let addressUserId = null;
-const API_BASE_URL = 'http://localhost:8080/api';
-
-// Initialize page
-document.addEventListener('DOMContentLoaded', function() {
-    loadUsers();
-    loadRoles();
-    checkUserRole();
-});
-
-// Check user role and show/hide elements accordingly
-function checkUserRole() {
-    const userRole = localStorage.getItem('userRole') || 'USER';
-    const currentUserName = localStorage.getItem('username') || 'Guest';
-    document.getElementById('currentUser').textContent = currentUserName;
-
-    if (userRole !== 'ADMIN') {
-        // Hide admin-only buttons
-        const adminButtons = document.querySelectorAll('.admin-only');
-        adminButtons.forEach(btn => btn.style.display = 'none');
-
-        // Show warning message
-        showNotification('You have limited access to user management features.', 'warning');
+class UserManager {
+    constructor() {
+        this.currentUser = null;
+        this.editingUserId = null;
+        this.addressUserId = null;
+        this.users = [];
+        this.roles = [];
+        this.API_BASE_URL = 'http://localhost:8080/api';
+        this.init();
     }
-}
 
-// Load all users
-async function loadUsers() {
-    try {
-        showLoading(true);
-        const response = await fetch(`${API_BASE_URL}/users`, {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                'Content-Type': 'application/json'
+    init() {
+        this.bindEvents();
+        this.loadUsers();
+        this.loadRoles();
+        this.checkUserRole();
+    }
+
+    bindEvents() {
+        // Form submissions
+        const userForm = document.getElementById('userForm');
+        if (userForm) {
+            userForm.addEventListener('submit', (e) => this.handleUserFormSubmission(e));
+        }
+
+        const addressForm = document.getElementById('addressForm');
+        if (addressForm) {
+            addressForm.addEventListener('submit', (e) => this.handleAddressFormSubmission(e));
+        }
+
+        // Search functionality
+        const searchInput = document.getElementById('userSearch');
+        if (searchInput) {
+            searchInput.addEventListener('keyup', () => this.filterUsers());
+        }
+
+        // Close modals when clicking outside
+        window.addEventListener('click', (event) => {
+            const userModal = document.getElementById('userModal');
+            const addressModal = document.getElementById('addressModal');
+
+            if (event.target === userModal) {
+                this.closeUserModal();
+            }
+            if (event.target === addressModal) {
+                this.closeAddressModal();
             }
         });
 
-        if (!response.ok) {
-            throw new Error('Failed to load users');
+        // Modal close buttons
+        const userModalClose = document.querySelector('#userModal .close');
+        if (userModalClose) {
+            userModalClose.addEventListener('click', () => this.closeUserModal());
         }
 
-        const users = await response.json();
-        displayUsers(users);
-    } catch (error) {
-        showNotification('Error loading users: ' + error.message, 'error');
-    } finally {
-        showLoading(false);
+        const addressModalClose = document.querySelector('#addressModal .close');
+        if (addressModalClose) {
+            addressModalClose.addEventListener('click', () => this.closeAddressModal());
+        }
     }
-}
 
-// Display users in table
-function displayUsers(users) {
-    const tbody = document.getElementById('usersTableBody');
-    tbody.innerHTML = '';
+    // Check user role and show/hide elements accordingly
+    checkUserRole() {
+        try {
+            const userRole = localStorage.getItem('userRole') || 'USER';
+            const currentUserName = localStorage.getItem('username') || 'Guest';
 
-    users.forEach(user => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${user.id}</td>
-            <td>${user.username}</td>
-            <td>${user.email}</td>
-            <td>${user.firstName || ''}</td>
-            <td>${user.lastName || ''}</td>
-            <td>${user.roles ? user.roles.map(role => role.name).join(', ') : ''}</td>
-            <td class="actions">
-                <button onclick="editUser(${user.id})" class="btn btn-sm btn-primary">Edit</button>
-                <button onclick="manageAddress(${user.id})" class="btn btn-sm btn-secondary">Address</button>
-                <button onclick="viewUserOrders(${user.id})" class="btn btn-sm btn-info">Orders</button>
-                <button onclick="deleteUser(${user.id})" class="btn btn-sm btn-danger admin-only">Delete</button>
-            </td>
-        `;
-        tbody.appendChild(row);
-    });
-
-    // Hide admin-only buttons if not admin
-    checkUserRole();
-}
-
-// Load roles for dropdown
-async function loadRoles() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/roles`, {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                'Content-Type': 'application/json'
+            const currentUserElement = document.getElementById('currentUser');
+            if (currentUserElement) {
+                currentUserElement.textContent = currentUserName;
             }
+
+            if (userRole !== 'ADMIN') {
+                // Hide admin-only buttons
+                const adminButtons = document.querySelectorAll('.admin-only');
+                adminButtons.forEach(btn => {
+                    if (btn) btn.style.display = 'none';
+                });
+
+                // Show warning message
+                this.showNotification('You have limited access to user management features.', 'warning');
+            }
+        } catch (error) {
+            console.error('Error checking user role:', error);
+        }
+    }
+
+    // Load all users
+    async loadUsers() {
+        try {
+            this.showLoading(true);
+            const response = await fetch(`${this.API_BASE_URL}/users`, {
+                headers: this.getAuthHeaders()
+            });
+
+            if (response.status === 401) {
+                this.handleUnauthorized();
+                return;
+            }
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const users = await response.json();
+            this.users = Array.isArray(users) ? users : [];
+            this.displayUsers(this.users);
+        } catch (error) {
+            console.error('Error loading users:', error);
+            this.showNotification('Error loading users: ' + error.message, 'error');
+            this.users = [];
+            this.displayUsers([]);
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    // Display users in table
+    displayUsers(users) {
+        const tbody = document.getElementById('usersTableBody');
+        if (!tbody) {
+            console.error('Users table body not found');
+            return;
+        }
+
+        tbody.innerHTML = '';
+
+        if (!users || users.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="no-results">No users found</td></tr>';
+            return;
+        }
+
+        users.forEach(user => {
+            if (!user) return;
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${user.id || 'N/A'}</td>
+                <td>${this.escapeHtml(user.username || '')}</td>
+                <td>${this.escapeHtml(user.email || '')}</td>
+                <td>${this.escapeHtml(user.firstName || '')}</td>
+                <td>${this.escapeHtml(user.lastName || '')}</td>
+                <td>${this.formatRoles(user.roles)}</td>
+                <td class="actions">
+                    <button onclick="userManager.editUser(${user.id})" class="btn btn-sm btn-primary">Edit</button>
+                    <button onclick="userManager.manageAddress(${user.id})" class="btn btn-sm btn-secondary">Address</button>
+                    <button onclick="userManager.viewUserOrders(${user.id})" class="btn btn-sm btn-info">Orders</button>
+                    <button onclick="userManager.deleteUser(${user.id})" class="btn btn-sm btn-danger admin-only">Delete</button>
+                </td>
+            `;
+            tbody.appendChild(row);
         });
 
-        if (!response.ok) {
-            throw new Error('Failed to load roles');
-        }
+        // Hide admin-only buttons if not admin
+        this.checkUserRole();
+    }
 
-        const roles = await response.json();
+    formatRoles(roles) {
+        if (!roles || !Array.isArray(roles)) return '';
+        return roles.map(role => this.escapeHtml(role.name || '')).join(', ');
+    }
+
+    // Load roles for dropdown
+    async loadRoles() {
+        try {
+            const response = await fetch(`${this.API_BASE_URL}/roles`, {
+                headers: this.getAuthHeaders()
+            });
+
+            if (response.status === 401) {
+                this.handleUnauthorized();
+                return;
+            }
+
+            if (!response.ok) {
+                console.warn('Failed to load roles, using empty list');
+                this.roles = [];
+                return;
+            }
+
+            const roles = await response.json();
+            this.roles = Array.isArray(roles) ? roles : [];
+            this.populateRolesDropdown();
+        } catch (error) {
+            console.error('Error loading roles:', error);
+            this.roles = [];
+            this.populateRolesDropdown();
+        }
+    }
+
+    populateRolesDropdown() {
         const rolesSelect = document.getElementById('roles');
+        if (!rolesSelect) return;
+
         rolesSelect.innerHTML = '';
 
-        roles.forEach(role => {
+        this.roles.forEach(role => {
+            if (!role) return;
             const option = document.createElement('option');
-            option.value = role.id;
-            option.textContent = role.name;
+            option.value = role.id || '';
+            option.textContent = role.name || 'Unknown Role';
             rolesSelect.appendChild(option);
         });
-    } catch (error) {
-        console.error('Error loading roles:', error);
     }
-}
 
-// Show create user modal
-function showCreateUserModal() {
-    document.getElementById('modalTitle').textContent = 'Create User';
-    document.getElementById('userForm').reset();
-    editingUserId = null;
-    document.getElementById('userModal').style.display = 'block';
-}
+    // Show create user modal
+    showCreateUserModal() {
+        const modalTitle = document.getElementById('modalTitle');
+        const userForm = document.getElementById('userForm');
+        const userModal = document.getElementById('userModal');
+        const passwordField = document.getElementById('password');
 
-// Edit user
-async function editUser(userId) {
-    try {
-        const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to load user details');
+        if (!modalTitle || !userForm || !userModal) {
+            console.error('Modal elements not found');
+            return;
         }
 
-        const user = await response.json();
+        modalTitle.textContent = 'Create User';
+        userForm.reset();
+        this.editingUserId = null;
 
-        document.getElementById('modalTitle').textContent = 'Edit User';
-        document.getElementById('username').value = user.username;
-        document.getElementById('email').value = user.email;
-        document.getElementById('firstName').value = user.firstName || '';
-        document.getElementById('lastName').value = user.lastName || '';
+        // Make password required for new users
+        if (passwordField) {
+            passwordField.required = true;
+        }
 
-        // Set selected roles
-        const rolesSelect = document.getElementById('roles');
-        Array.from(rolesSelect.options).forEach(option => {
-            option.selected = user.roles && user.roles.some(role => role.id == option.value);
-        });
-
-        editingUserId = userId;
-        document.getElementById('userModal').style.display = 'block';
-    } catch (error) {
-        showNotification('Error loading user details: ' + error.message, 'error');
+        userModal.style.display = 'block';
     }
-}
 
-// Close user modal
-function closeUserModal() {
-    document.getElementById('userModal').style.display = 'none';
-    editingUserId = null;
-}
+    // Edit user
+    async editUser(userId) {
+        if (!userId) {
+            this.showNotification('Invalid user ID', 'error');
+            return;
+        }
 
-// Handle user form submission
-document.getElementById('userForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
+        try {
+            const response = await fetch(`${this.API_BASE_URL}/users/${userId}`, {
+                headers: this.getAuthHeaders()
+            });
 
-    const formData = new FormData(e.target);
-    const selectedRoles = Array.from(document.getElementById('roles').selectedOptions)
-        .map(option => ({ id: parseInt(option.value) }));
+            if (response.status === 401) {
+                this.handleUnauthorized();
+                return;
+            }
 
-    const userData = {
-        username: formData.get('username'),
-        email: formData.get('email'),
-        password: formData.get('password'),
-        firstName: formData.get('firstName'),
-        lastName: formData.get('lastName'),
-        roles: selectedRoles
-    };
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
 
-    try {
-        let response;
-        if (editingUserId) {
-            // Update user
-            response = await fetch(`${API_BASE_URL}/users/${editingUserId}`, {
+            const user = await response.json();
+
+            const modalTitle = document.getElementById('modalTitle');
+            const usernameField = document.getElementById('username');
+            const emailField = document.getElementById('email');
+            const firstNameField = document.getElementById('firstName');
+            const lastNameField = document.getElementById('lastName');
+            const passwordField = document.getElementById('password');
+            const rolesSelect = document.getElementById('roles');
+            const userModal = document.getElementById('userModal');
+
+            if (!modalTitle || !userModal) {
+                console.error('Modal elements not found');
+                return;
+            }
+
+            modalTitle.textContent = 'Edit User';
+
+            // Populate form fields
+            if (usernameField) usernameField.value = user.username || '';
+            if (emailField) emailField.value = user.email || '';
+            if (firstNameField) firstNameField.value = user.firstName || '';
+            if (lastNameField) lastNameField.value = user.lastName || '';
+
+            // Make password optional for editing
+            if (passwordField) {
+                passwordField.value = '';
+                passwordField.required = false;
+                passwordField.placeholder = 'Leave empty to keep current password';
+            }
+
+            // Set selected roles
+            if (rolesSelect && user.roles) {
+                Array.from(rolesSelect.options).forEach(option => {
+                    option.selected = user.roles.some(role => role.id == option.value);
+                });
+            }
+
+            this.editingUserId = userId;
+            userModal.style.display = 'block';
+        } catch (error) {
+            console.error('Error loading user details:', error);
+            this.showNotification('Error loading user details: ' + error.message, 'error');
+        }
+    }
+
+    // Close user modal
+    closeUserModal() {
+        const userModal = document.getElementById('userModal');
+        if (userModal) {
+            userModal.style.display = 'none';
+        }
+        this.editingUserId = null;
+    }
+
+    // Handle user form submission
+    async handleUserFormSubmission(e) {
+        e.preventDefault();
+
+        const form = e.target;
+        const formData = new FormData(form);
+
+        // Validation
+        const username = formData.get('username')?.toString().trim();
+        const email = formData.get('email')?.toString().trim();
+        const password = formData.get('password')?.toString();
+
+        if (!username) {
+            this.showNotification('Username is required', 'error');
+            return;
+        }
+
+        if (!email) {
+            this.showNotification('Email is required', 'error');
+            return;
+        }
+
+        if (!this.editingUserId && !password) {
+            this.showNotification('Password is required for new users', 'error');
+            return;
+        }
+
+        if (!this.isValidEmail(email)) {
+            this.showNotification('Please enter a valid email address', 'error');
+            return;
+        }
+
+        const rolesSelect = document.getElementById('roles');
+        const selectedRoles = rolesSelect ?
+            Array.from(rolesSelect.selectedOptions).map(option => ({ id: parseInt(option.value) })) :
+            [];
+
+        const userData = {
+            username,
+            email,
+            firstName: formData.get('firstName')?.toString().trim() || null,
+            lastName: formData.get('lastName')?.toString().trim() || null,
+            roles: selectedRoles
+        };
+
+        // Only include password if it's provided
+        if (password) {
+            userData.password = password;
+        }
+
+        try {
+            let response;
+            if (this.editingUserId) {
+                // Update user
+                response = await fetch(`${this.API_BASE_URL}/users/${this.editingUserId}`, {
+                    method: 'PUT',
+                    headers: {
+                        ...this.getAuthHeaders(),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(userData)
+                });
+            } else {
+                // Create user
+                response = await fetch(`${this.API_BASE_URL}/users`, {
+                    method: 'POST',
+                    headers: {
+                        ...this.getAuthHeaders(),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(userData)
+                });
+            }
+
+            if (response.status === 401) {
+                this.handleUnauthorized();
+                return;
+            }
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            }
+
+            this.showNotification(`User ${this.editingUserId ? 'updated' : 'created'} successfully!`, 'success');
+            this.closeUserModal();
+            await this.loadUsers();
+        } catch (error) {
+            console.error('Error saving user:', error);
+            this.showNotification('Error saving user: ' + error.message, 'error');
+        }
+    }
+
+    // Delete user
+    async deleteUser(userId) {
+        if (!userId) {
+            this.showNotification('Invalid user ID', 'error');
+            return;
+        }
+
+        if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${this.API_BASE_URL}/users/${userId}`, {
+                method: 'DELETE',
+                headers: this.getAuthHeaders()
+            });
+
+            if (response.status === 401) {
+                this.handleUnauthorized();
+                return;
+            }
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            }
+
+            this.showNotification('User deleted successfully!', 'success');
+            await this.loadUsers();
+        } catch (error) {
+            console.error('Error deleting user:', error);
+            this.showNotification('Error deleting user: ' + error.message, 'error');
+        }
+    }
+
+    // Manage user address
+    async manageAddress(userId) {
+        if (!userId) {
+            this.showNotification('Invalid user ID', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${this.API_BASE_URL}/users/${userId}/address`, {
+                headers: this.getAuthHeaders()
+            });
+
+            let address = {};
+            if (response.status === 401) {
+                this.handleUnauthorized();
+                return;
+            }
+
+            if (response.ok) {
+                address = await response.json() || {};
+            }
+
+            // Populate address form
+            const streetAddressField = document.getElementById('streetAddress');
+            const cityField = document.getElementById('city');
+            const stateField = document.getElementById('state');
+            const postalCodeField = document.getElementById('postalCode');
+            const countryField = document.getElementById('country');
+            const addressModal = document.getElementById('addressModal');
+
+            if (streetAddressField) streetAddressField.value = address.streetAddress || '';
+            if (cityField) cityField.value = address.city || '';
+            if (stateField) stateField.value = address.state || '';
+            if (postalCodeField) postalCodeField.value = address.postalCode || '';
+            if (countryField) countryField.value = address.country || '';
+
+            this.addressUserId = userId;
+            if (addressModal) {
+                addressModal.style.display = 'block';
+            }
+        } catch (error) {
+            console.error('Error loading address:', error);
+            this.showNotification('Error loading address: ' + error.message, 'error');
+        }
+    }
+
+    // Close address modal
+    closeAddressModal() {
+        const addressModal = document.getElementById('addressModal');
+        if (addressModal) {
+            addressModal.style.display = 'none';
+        }
+        this.addressUserId = null;
+    }
+
+    // Handle address form submission
+    async handleAddressFormSubmission(e) {
+        e.preventDefault();
+
+        if (!this.addressUserId) {
+            this.showNotification('No user selected for address management', 'error');
+            return;
+        }
+
+        const formData = new FormData(e.target);
+        const addressData = {
+            streetAddress: formData.get('streetAddress')?.toString().trim() || null,
+            city: formData.get('city')?.toString().trim() || null,
+            state: formData.get('state')?.toString().trim() || null,
+            postalCode: formData.get('postalCode')?.toString().trim() || null,
+            country: formData.get('country')?.toString().trim() || null
+        };
+
+        try {
+            const response = await fetch(`${this.API_BASE_URL}/users/${this.addressUserId}/address`, {
                 method: 'PUT',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    ...this.getAuthHeaders(),
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(userData)
+                body: JSON.stringify(addressData)
             });
+
+            if (response.status === 401) {
+                this.handleUnauthorized();
+                return;
+            }
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            }
+
+            this.showNotification('Address saved successfully!', 'success');
+            this.closeAddressModal();
+        } catch (error) {
+            console.error('Error saving address:', error);
+            this.showNotification('Error saving address: ' + error.message, 'error');
+        }
+    }
+
+    // View user orders
+    viewUserOrders(userId) {
+        if (!userId) {
+            this.showNotification('Invalid user ID', 'error');
+            return;
+        }
+        window.location.href = `orders.html?userId=${userId}`;
+    }
+
+    // Filter users
+    filterUsers() {
+        const searchInput = document.getElementById('userSearch');
+        if (!searchInput) return;
+
+        const searchTerm = searchInput.value.toLowerCase().trim();
+
+        if (!searchTerm) {
+            this.displayUsers(this.users);
+            return;
+        }
+
+        const filteredUsers = this.users.filter(user => {
+            if (!user) return false;
+
+            const searchFields = [
+                user.username,
+                user.email,
+                user.firstName,
+                user.lastName,
+                user.id?.toString(),
+                this.formatRoles(user.roles)
+            ];
+
+            return searchFields.some(field =>
+                field && field.toLowerCase().includes(searchTerm)
+            );
+        });
+
+        this.displayUsers(filteredUsers);
+    }
+
+    // Refresh users
+    refreshUsers() {
+        this.loadUsers();
+    }
+
+    // Utility functions
+    isValidEmail(email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    }
+
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    getAuthHeaders() {
+        const token = localStorage.getItem('token');
+        return {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        };
+    }
+
+    handleUnauthorized() {
+        console.warn('Unauthorized access - redirecting to login');
+        this.logout();
+    }
+
+    showNotification(message, type = 'info') {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.textContent = message;
+
+        // Add styles
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 4px;
+            color: white;
+            z-index: 10000;
+            max-width: 300px;
+            word-wrap: break-word;
+        `;
+
+        // Set background color based on type
+        switch (type) {
+            case 'error':
+                notification.style.backgroundColor = '#dc3545';
+                break;
+            case 'success':
+                notification.style.backgroundColor = '#28a745';
+                break;
+            case 'warning':
+                notification.style.backgroundColor = '#ffc107';
+                notification.style.color = '#212529';
+                break;
+            default:
+                notification.style.backgroundColor = '#17a2b8';
+        }
+
+        // Add to page
+        document.body.appendChild(notification);
+
+        // Remove after 5 seconds
+        setTimeout(() => {
+            if (document.body.contains(notification)) {
+                document.body.removeChild(notification);
+            }
+        }, 5000);
+    }
+
+    showLoading(show) {
+        if (show) {
+            document.body.style.cursor = 'wait';
         } else {
-            // Create user
-            response = await fetch(`${API_BASE_URL}/users`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(userData)
-            });
+            document.body.style.cursor = 'default';
         }
-
-        if (!response.ok) {
-            throw new Error('Failed to save user');
-        }
-
-        showNotification(`User ${editingUserId ? 'updated' : 'created'} successfully!`, 'success');
-        closeUserModal();
-        loadUsers();
-    } catch (error) {
-        showNotification('Error saving user: ' + error.message, 'error');
-    }
-});
-
-// Delete user
-async function deleteUser(userId) {
-    if (!confirm('Are you sure you want to delete this user?')) {
-        return;
     }
 
-    try {
-        const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to delete user');
-        }
-
-        showNotification('User deleted successfully!', 'success');
-        loadUsers();
-    } catch (error) {
-        showNotification('Error deleting user: ' + error.message, 'error');
+    logout() {
+        localStorage.removeItem('token');
+        localStorage.removeItem('username');
+        localStorage.removeItem('userRole');
+        window.location.href = 'login.html';
     }
 }
 
-// Manage user address
-async function manageAddress(userId) {
-    try {
-        const response = await fetch(`${API_BASE_URL}/users/${userId}/address`, {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                'Content-Type': 'application/json'
-            }
-        });
+// Global functions for backward compatibility
+let userManager;
 
-        let address = {};
-        if (response.ok) {
-            address = await response.json();
-        }
-
-        // Populate address form
-        document.getElementById('streetAddress').value = address.streetAddress || '';
-        document.getElementById('city').value = address.city || '';
-        document.getElementById('state').value = address.state || '';
-        document.getElementById('postalCode').value = address.postalCode || '';
-        document.getElementById('country').value = address.country || '';
-
-        addressUserId = userId;
-        document.getElementById('addressModal').style.display = 'block';
-    } catch (error) {
-        showNotification('Error loading address: ' + error.message, 'error');
-    }
+function showCreateUserModal() {
+    if (userManager) userManager.showCreateUserModal();
 }
 
-// Close address modal
-function closeAddressModal() {
-    document.getElementById('addressModal').style.display = 'none';
-    addressUserId = null;
+function editUser(userId) {
+    if (userManager) userManager.editUser(userId);
 }
 
-// Handle address form submission
-document.getElementById('addressForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
+function deleteUser(userId) {
+    if (userManager) userManager.deleteUser(userId);
+}
 
-    const formData = new FormData(e.target);
-    const addressData = {
-        streetAddress: formData.get('streetAddress'),
-        city: formData.get('city'),
-        state: formData.get('state'),
-        postalCode: formData.get('postalCode'),
-        country: formData.get('country')
-    };
+function manageAddress(userId) {
+    if (userManager) userManager.manageAddress(userId);
+}
 
-    try {
-        const response = await fetch(`${API_BASE_URL}/users/${addressUserId}/address`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(addressData)
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to save address');
-        }
-
-        showNotification('Address saved successfully!', 'success');
-        closeAddressModal();
-    } catch (error) {
-        showNotification('Error saving address: ' + error.message, 'error');
-    }
-});
-
-// View user orders
 function viewUserOrders(userId) {
-    window.location.href = `orders.html?userId=${userId}`;
+    if (userManager) userManager.viewUserOrders(userId);
 }
 
-// Filter users
+function closeUserModal() {
+    if (userManager) userManager.closeUserModal();
+}
+
+function closeAddressModal() {
+    if (userManager) userManager.closeAddressModal();
+}
+
 function filterUsers() {
-    const searchTerm = document.getElementById('userSearch').value.toLowerCase();
-    const rows = document.querySelectorAll('#usersTableBody tr');
-
-    rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchTerm) ? '' : 'none';
-    });
+    if (userManager) userManager.filterUsers();
 }
 
-// Refresh users
 function refreshUsers() {
-    loadUsers();
-}
-
-// Utility functions
-function showNotification(message, type = 'info') {
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    notification.textContent = message;
-
-    // Add to page
-    document.body.appendChild(notification);
-
-    // Remove after 3 seconds
-    setTimeout(() => {
-        document.body.removeChild(notification);
-    }, 3000);
-}
-
-function showLoading(show) {
-    // You can implement a loading spinner here
-    if (show) {
-        document.body.style.cursor = 'wait';
-    } else {
-        document.body.style.cursor = 'default';
-    }
+    if (userManager) userManager.refreshUsers();
 }
 
 function logout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('username');
-    localStorage.removeItem('userRole');
-    window.location.href = 'login.html';
+    if (userManager) userManager.logout();
 }
 
-// Close modals when clicking outside
-window.onclick = function(event) {
-    const userModal = document.getElementById('userModal');
-    const addressModal = document.getElementById('addressModal');
-
-    if (event.target === userModal) {
-        closeUserModal();
-    }
-    if (event.target === addressModal) {
-        closeAddressModal();
-    }
-}
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    userManager = new UserManager();
+});
