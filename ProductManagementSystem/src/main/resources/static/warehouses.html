@@ -10,62 +10,224 @@
 <div class="container">
   <header class="main-header">
     <nav class="breadcrumb">
-      <a href="index.html">Dashboard</a> > Warehouse Management
+      <a href="index.html">Dashboard</a> > <span>Warehouse Management</span>
     </nav>
-    <h1>Warehouse Management</h1>
+    <div class="header-content">
+      <h1>Warehouse Management</h1>
+      <div class="header-actions">
+        <button id="refreshBtn" class="btn btn-secondary" title="Refresh warehouses">
+          Refresh
+        </button>
+        <button id="logoutBtn" class="btn btn-outline" title="Logout">
+          Logout
+        </button>
+      </div>
+    </div>
   </header>
 
   <main>
-    <div class="controls">
-      <button id="createWarehouseBtn" class="btn btn-primary">Add Warehouse</button>
-      <div class="search-box">
-        <input type="text" id="searchInput" placeholder="Search warehouses...">
-        <button id="searchBtn" class="btn">Search</button>
+    <div class="controls-section">
+      <div class="controls-left">
+        <button id="createWarehouseBtn" class="btn btn-primary">
+          Add Warehouse
+        </button>
+        <div class="view-toggle">
+          <button id="gridViewBtn" class="btn btn-sm btn-toggle active" title="Grid View">
+            <span class="btn-icon">⚏</span>
+          </button>
+          <button id="listViewBtn" class="btn btn-sm btn-toggle" title="List View">
+            <span class="btn-icon">☰</span>
+          </button>
+        </div>
+      </div>
+      <div class="controls-right">
+        <div class="search-container">
+          <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Search warehouses by name, location, or ID..." class="search-input">
+            <button id="searchBtn" class="btn btn-search" title="Search">
+              Search
+            </button>
+            <button id="clearSearchBtn" class="btn btn-clear" title="Clear search" style="display: none;">
+              <span class="btn-icon">✕</span>
+            </button>
+          </div>
+        </div>
+        <div class="filter-controls">
+          <select id="sortSelect" class="form-select">
+            <option value="name">Sort by Name</option>
+            <option value="location">Sort by Location</option>
+            <option value="id">Sort by ID</option>
+            <option value="capacity">Sort by Capacity</option>
+          </select>
+          <button id="sortOrderBtn" class="btn btn-sm btn-toggle" title="Toggle sort order">
+            <span class="btn-icon">↕</span>
+          </button>
+        </div>
       </div>
     </div>
 
-    <div class="warehouse-grid" id="warehousesGrid">
-      <!-- Warehouses will be loaded here -->
+    <!-- Loading and Status Messages -->
+    <div id="loadingIndicator" class="loading-indicator" style="display: none;">
+      <div class="spinner"></div>
+      <span>Loading warehouses...</span>
+    </div>
+
+    <div id="statusMessage" class="status-message" style="display: none;"></div>
+
+    <!-- Warehouses Display -->
+    <div class="warehouses-container">
+      <div class="warehouse-stats" id="warehouseStats" style="display: none;">
+        <div class="stat-card">
+          <h3 id="totalWarehousesCount">0</h3>
+          <p>Total Warehouses</p>
+        </div>
+        <div class="stat-card">
+          <h3 id="totalCapacityCount">0</h3>
+          <p>Total Capacity</p>
+        </div>
+        <div class="stat-card">
+          <h3 id="averageWorkersCount">0</h3>
+          <p>Avg Workers</p>
+        </div>
+        <div class="stat-card">
+          <h3 id="managedWarehousesCount">0</h3>
+          <p>With Managers</p>
+        </div>
+      </div>
+
+      <div class="warehouse-grid" id="warehousesGrid">
+        <!-- Warehouses will be loaded here -->
+      </div>
     </div>
 
     <!-- Create/Edit Warehouse Modal -->
-    <div id="warehouseModal" class="modal">
+    <div id="warehouseModal" class="modal" role="dialog" aria-labelledby="modalTitle" aria-hidden="true">
       <div class="modal-content">
-        <span class="close">&times;</span>
-        <h2 id="modalTitle">Add Warehouse</h2>
-        <form id="warehouseForm">
-          <div class="form-group">
-            <label for="name">Warehouse Name:</label>
-            <input type="text" id="name" name="name" required>
-          </div>
+        <div class="modal-header">
+          <h2 id="modalTitle">Add Warehouse</h2>
+          <button class="close" type="button" aria-label="Close modal">&times;</button>
+        </div>
+        <form id="warehouseForm" class="modal-form">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="name" class="form-label required">Warehouse Name:</label>
+              <input type="text" id="name" name="name" class="form-input" required maxlength="100"
+                     placeholder="Enter warehouse name">
+              <div class="form-error" id="nameError"></div>
+            </div>
 
-          <div class="form-group">
-            <label for="location">Location:</label>
-            <input type="text" id="location" name="location" required>
+            <div class="form-group">
+              <label for="location" class="form-label required">Location:</label>
+              <input type="text" id="location" name="location" class="form-input" required maxlength="100"
+                     placeholder="Enter location (city, state)">
+              <div class="form-error" id="locationError"></div>
+            </div>
+
+            <div class="form-group">
+              <label for="address" class="form-label">Full Address:</label>
+              <textarea id="address" name="address" class="form-textarea" rows="3" maxlength="500"
+                        placeholder="Enter complete address (optional)"></textarea>
+              <div class="form-error" id="addressError"></div>
+            </div>
+
+            <div class="form-group">
+              <label for="capacity" class="form-label">Capacity:</label>
+              <input type="number" id="capacity" name="capacity" class="form-input" min="0" max="999999"
+                     placeholder="Enter capacity (optional)">
+              <div class="form-error" id="capacityError"></div>
+            </div>
+
+            <div class="form-group">
+              <label for="managerId" class="form-label">Manager:</label>
+              <select id="managerId" name="managerId" class="form-select">
+                <option value="">Select a manager (optional)</option>
+                <!-- Options will be populated dynamically -->
+              </select>
+              <div class="form-error" id="managerError"></div>
+            </div>
+
+            <div class="form-group">
+              <label for="description" class="form-label">Description:</label>
+              <textarea id="description" name="description" class="form-textarea" rows="3" maxlength="500"
+                        placeholder="Enter warehouse description (optional)"></textarea>
+              <div class="form-error" id="descriptionError"></div>
+            </div>
           </div>
 
           <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Save Warehouse</button>
-            <button type="button" class="btn btn-secondary" id="cancelBtn">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="saveBtn">
+              Save Warehouse
+            </button>
+            <button type="button" class="btn btn-secondary" id="cancelBtn">
+              Cancel
+            </button>
           </div>
         </form>
       </div>
     </div>
 
     <!-- Warehouse Details Modal -->
-    <div id="warehouseDetailsModal" class="modal">
+    <div id="warehouseDetailsModal" class="modal large-modal" role="dialog" aria-labelledby="warehouseDetailsTitle" aria-hidden="true">
       <div class="modal-content large">
-        <span class="close">&times;</span>
-        <h2 id="warehouseDetailsTitle">Warehouse Details</h2>
-        <div id="warehouseDetailsContent">
-          <!-- Warehouse details and stock movements will be loaded here -->
+        <div class="modal-header">
+          <h2 id="warehouseDetailsTitle">Warehouse Details</h2>
+          <div class="modal-header-actions">
+            <button id="exportDetailsBtn" class="btn btn-sm btn-outline" title="Export details">
+              Export
+            </button>
+            <button class="close" type="button" aria-label="Close modal">&times;</button>
+          </div>
         </div>
-        <div class="form-actions">
-          <button class="btn btn-secondary close-details">Close</button>
+        <div class="modal-body">
+          <div id="warehouseDetailsContent" class="details-content">
+            <!-- Warehouse details and stock movements will be loaded here -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary close-details">
+            Close
+          </button>
         </div>
       </div>
     </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="modal" role="dialog" aria-labelledby="confirmTitle" aria-hidden="true">
+      <div class="modal-content small">
+        <div class="modal-header">
+          <h3 id="confirmTitle">Confirm Action</h3>
+          <button class="close" type="button" aria-label="Close modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p id="confirmMessage">Are you sure you want to proceed?</p>
+        </div>
+        <div class="modal-footer">
+          <button id="confirmYes" class="btn btn-danger">
+            Yes
+          </button>
+          <button id="confirmNo" class="btn btn-secondary">
+            No
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container">
+      <!-- Toast notifications will be inserted here -->
+    </div>
   </main>
+</div>
+
+<!-- Add keyboard shortcuts info -->
+<div class="keyboard-shortcuts" id="keyboardShortcuts" style="display: none;">
+  <h4>Keyboard Shortcuts</h4>
+  <ul>
+    <li><kbd>Ctrl</kbd> + <kbd>N</kbd> - Add new warehouse</li>
+    <li><kbd>Ctrl</kbd> + <kbd>F</kbd> - Focus search</li>
+    <li><kbd>F5</kbd> - Refresh warehouses</li>
+    <li><kbd>Esc</kbd> - Close modal</li>
+  </ul>
 </div>
 
 <script src="warehouses.js"></script>

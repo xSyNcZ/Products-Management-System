@@ -1,4 +1,4 @@
-// Stock Movement Management JavaScript
+// Stock Movement Management JavaScript with API Integration
 
 let movements = [];
 let filteredMovements = [];
@@ -6,6 +6,9 @@ let currentPage = 1;
 const movementsPerPage = 10;
 let products = [];
 let warehouses = [];
+
+// API Base URL
+const API_BASE_URL = 'http://localhost:8080/api';
 
 // Initialize stock movement page
 document.addEventListener('DOMContentLoaded', function() {
@@ -15,113 +18,155 @@ document.addEventListener('DOMContentLoaded', function() {
     setDefaultDateTime();
 });
 
+// API Helper function
+async function apiCall(endpoint, options = {}) {
+    try {
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            },
+            ...options
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('API call failed:', error);
+        throw error;
+    }
+}
+
 // Load stock movements from API
 async function loadMovements() {
     try {
-        // Mock data - replace with actual API call
-        movements = [
-            {
-                id: 1,
-                product: { id: 1, name: 'Product A' },
-                warehouse: { id: 1, name: 'Main Warehouse', location: 'Downtown' },
-                movementStatus: 'DELIVERED',
-                quantity: 100.0,
-                movementDate: '2024-01-15T09:30:00'
-            },
-            {
-                id: 2,
-                product: { id: 2, name: 'Product B' },
-                warehouse: { id: 1, name: 'Main Warehouse', location: 'Downtown' },
-                movementStatus: 'PROCESSING',
-                quantity: -25.0,
-                movementDate: '2024-01-16T14:20:00'
-            },
-            {
-                id: 3,
-                product: { id: 3, name: 'Product C' },
-                warehouse: { id: 2, name: 'Secondary Warehouse', location: 'Industrial Area' },
-                movementStatus: 'CREATED',
-                quantity: 75.0,
-                movementDate: '2024-01-17T11:15:00'
-            }
-        ];
-
-        // In real implementation:
-        // movements = await PMS.apiCall('/stock-movements');
-
+        movements = await apiCall('/stock-movements');
         filteredMovements = [...movements];
         displayMovements();
         setupPagination();
         updateSummary();
     } catch (error) {
         console.error('Error loading movements:', error);
-        alert('Failed to load stock movements');
+        alert('Failed to load stock movements. Please check if the API server is running.');
+        // Fallback to mock data for development
+        loadMockMovements();
     }
 }
 
-// Load products
+// Fallback mock data for development
+function loadMockMovements() {
+    movements = [
+        {
+            id: 1,
+            product: { id: 1, name: 'Product A' },
+            warehouse: { id: 1, name: 'Main Warehouse', location: 'Downtown' },
+            movementStatus: 'DELIVERED',
+            quantity: 100.0,
+            movementDate: '2024-01-15T09:30:00'
+        },
+        {
+            id: 2,
+            product: { id: 2, name: 'Product B' },
+            warehouse: { id: 1, name: 'Main Warehouse', location: 'Downtown' },
+            movementStatus: 'PROCESSING',
+            quantity: -25.0,
+            movementDate: '2024-01-16T14:20:00'
+        },
+        {
+            id: 3,
+            product: { id: 3, name: 'Product C' },
+            warehouse: { id: 2, name: 'Secondary Warehouse', location: 'Industrial Area' },
+            movementStatus: 'CREATED',
+            quantity: 75.0,
+            movementDate: '2024-01-17T11:15:00'
+        }
+    ];
+    filteredMovements = [...movements];
+    displayMovements();
+    setupPagination();
+    updateSummary();
+}
+
+// Load products from API
 async function loadProducts() {
     try {
-        // Mock data - replace with actual API call
+        products = await apiCall('/products');
+        populateProductDropdowns();
+    } catch (error) {
+        console.error('Error loading products:', error);
+        // Fallback to mock data
         products = [
             { id: 1, name: 'Product A' },
             { id: 2, name: 'Product B' },
             { id: 3, name: 'Product C' }
         ];
-
-        // Populate filter dropdown
-        const productFilter = document.getElementById('productFilter');
-        products.forEach(product => {
-            const option = document.createElement('option');
-            option.value = product.id;
-            option.textContent = product.name;
-            productFilter.appendChild(option);
-        });
-
-        // Populate movement form dropdown
-        const movementProductSelect = document.getElementById('movementProductId');
-        products.forEach(product => {
-            const option = document.createElement('option');
-            option.value = product.id;
-            option.textContent = product.name;
-            movementProductSelect.appendChild(option);
-        });
-
-    } catch (error) {
-        console.error('Error loading products:', error);
+        populateProductDropdowns();
     }
 }
 
-// Load warehouses
+// Load warehouses from API
 async function loadWarehouses() {
     try {
-        // Mock data - replace with actual API call
+        warehouses = await apiCall('/warehouses');
+        populateWarehouseDropdowns();
+    } catch (error) {
+        console.error('Error loading warehouses:', error);
+        // Fallback to mock data
         warehouses = [
             { id: 1, name: 'Main Warehouse', location: 'Downtown' },
             { id: 2, name: 'Secondary Warehouse', location: 'Industrial Area' }
         ];
-
-        // Populate filter dropdown
-        const warehouseFilter = document.getElementById('warehouseFilter');
-        warehouses.forEach(warehouse => {
-            const option = document.createElement('option');
-            option.value = warehouse.id;
-            option.textContent = `${warehouse.name} (${warehouse.location})`;
-            warehouseFilter.appendChild(option);
-        });
-
-        // Populate movement form dropdown
-        const movementWarehouseSelect = document.getElementById('movementWarehouseId');
-        warehouses.forEach(warehouse => {
-            const option = document.createElement('option');
-            option.value = warehouse.id;
-            option.textContent = `${warehouse.name} (${warehouse.location})`;
-            movementWarehouseSelect.appendChild(option);
-        });
-
-    } catch (error) {
-        console.error('Error loading warehouses:', error);
+        populateWarehouseDropdowns();
     }
+}
+
+// Populate product dropdowns
+function populateProductDropdowns() {
+    // Populate filter dropdown
+    const productFilter = document.getElementById('productFilter');
+    productFilter.innerHTML = '<option value="">All Products</option>';
+    products.forEach(product => {
+        const option = document.createElement('option');
+        option.value = product.id;
+        option.textContent = product.name;
+        productFilter.appendChild(option);
+    });
+
+    // Populate movement form dropdown
+    const movementProductSelect = document.getElementById('movementProductId');
+    movementProductSelect.innerHTML = '<option value="">Select Product</option>';
+    products.forEach(product => {
+        const option = document.createElement('option');
+        option.value = product.id;
+        option.textContent = product.name;
+        movementProductSelect.appendChild(option);
+    });
+}
+
+// Populate warehouse dropdowns
+function populateWarehouseDropdowns() {
+    // Populate filter dropdown
+    const warehouseFilter = document.getElementById('warehouseFilter');
+    warehouseFilter.innerHTML = '<option value="">All Warehouses</option>';
+    warehouses.forEach(warehouse => {
+        const option = document.createElement('option');
+        option.value = warehouse.id;
+        option.textContent = `${warehouse.name} (${warehouse.location || ''})`;
+        warehouseFilter.appendChild(option);
+    });
+
+    // Populate movement form dropdown
+    const movementWarehouseSelect = document.getElementById('movementWarehouseId');
+    movementWarehouseSelect.innerHTML = '<option value="">Select Warehouse</option>';
+    warehouses.forEach(warehouse => {
+        const option = document.createElement('option');
+        option.value = warehouse.id;
+        option.textContent = `${warehouse.name} (${warehouse.location || ''})`;
+        movementWarehouseSelect.appendChild(option);
+    });
 }
 
 // Display movements in table
@@ -142,8 +187,8 @@ function displayMovements() {
 
         row.innerHTML = `
             <td>#${movement.id}</td>
-            <td>${movement.product.name}</td>
-            <td>${movement.warehouse.name}</td>
+            <td>${movement.product?.name || 'Unknown Product'}</td>
+            <td>${movement.warehouse?.name || 'Unknown Warehouse'}</td>
             <td class="${quantityClass}">${quantityPrefix}${movement.quantity}</td>
             <td><span class="movement-type movement-${getMovementTypeClass(movement)}">${movement.movementStatus}</span></td>
             <td>${movementDate}</td>
@@ -174,8 +219,8 @@ function filterMovements() {
     const dateToFilter = document.getElementById('dateToFilter').value;
 
     filteredMovements = movements.filter(movement => {
-        let matchesWarehouse = !warehouseFilter || movement.warehouse.id == warehouseFilter;
-        let matchesProduct = !productFilter || movement.product.id == productFilter;
+        let matchesWarehouse = !warehouseFilter || movement.warehouse?.id == warehouseFilter;
+        let matchesProduct = !productFilter || movement.product?.id == productFilter;
         let matchesStatus = !statusFilter || movement.movementStatus === statusFilter;
 
         let matchesDateRange = true;
@@ -286,89 +331,126 @@ document.getElementById('createMovementForm').addEventListener('submit', async f
     e.preventDefault();
 
     const formData = {
-        productId: document.getElementById('movementProductId').value,
-        warehouseId: document.getElementById('movementWarehouseId').value,
+        productId: parseInt(document.getElementById('movementProductId').value),
+        warehouseId: parseInt(document.getElementById('movementWarehouseId').value),
         quantity: parseFloat(document.getElementById('movementQuantity').value),
         movementStatus: document.getElementById('movementStatus').value,
         movementDate: document.getElementById('movementDate').value
     };
 
     try {
-        // In real implementation:
-        // await PMS.apiCall('/stock-movements', {
-        //     method: 'POST',
-        //     body: JSON.stringify(formData)
-        // });
+        const createdMovement = await apiCall('/stock-movements', {
+            method: 'POST',
+            body: JSON.stringify(formData)
+        });
 
-        // Mock implementation - add to local array
-        const newMovement = {
-            id: movements.length + 1,
-            product: products.find(p => p.id == formData.productId),
-            warehouse: warehouses.find(w => w.id == formData.warehouseId),
-            quantity: formData.quantity,
-            movementStatus: formData.movementStatus,
-            movementDate: formData.movementDate
-        };
-
-        movements.unshift(newMovement);
-        filteredMovements = [...movements];
-
-        displayMovements();
-        setupPagination();
-        updateSummary();
+        // Reload movements to get the updated list
+        await loadMovements();
         closeCreateMovementModal();
-
         alert('Stock movement recorded successfully');
 
     } catch (error) {
         console.error('Error creating movement:', error);
-        alert('Failed to record stock movement');
+        alert('Failed to record stock movement. Please check the API connection.');
     }
 });
 
 // View movement details
-function viewMovement(movementId) {
-    const movement = movements.find(m => m.id === movementId);
-    if (!movement) return;
+async function viewMovement(movementId) {
+    try {
+        const movement = await apiCall(`/stock-movements/${movementId}`);
 
-    alert(`Movement Details:
-Product: ${movement.product.name}
-Warehouse: ${movement.warehouse.name}
+        alert(`Movement Details:
+Product: ${movement.product?.name || 'Unknown'}
+Warehouse: ${movement.warehouse?.name || 'Unknown'}
 Quantity: ${movement.quantity}
 Status: ${movement.movementStatus}
 Date: ${new Date(movement.movementDate).toLocaleString()}`);
+    } catch (error) {
+        console.error('Error loading movement details:', error);
+        alert('Failed to load movement details');
+    }
 }
 
 // Edit movement
 function editMovement(movementId) {
     alert(`Edit movement ${movementId} - Feature to be implemented`);
+    // TODO: Implement edit functionality
+    // You can create an edit modal similar to the create modal
+    // and use PUT request to update the movement
 }
 
 // Delete movement
 async function deleteMovement(movementId) {
     if (confirm('Are you sure you want to delete this movement?')) {
         try {
-            // In real implementation:
-            // await PMS.apiCall(`/stock-movements/${movementId}`, { method: 'DELETE' });
+            await apiCall(`/stock-movements/${movementId}`, {
+                method: 'DELETE'
+            });
 
-            // Remove from local array
-            const index = movements.findIndex(m => m.id === movementId);
-            if (index > -1) {
-                movements.splice(index, 1);
-                filteredMovements = movements.filter(m =>
-                    filteredMovements.some(fm => fm.id === m.id)
-                );
-
-                displayMovements();
-                setupPagination();
-                updateSummary();
-            }
-
+            // Reload movements after deletion
+            await loadMovements();
             alert('Movement deleted successfully');
 
         } catch (error) {
             console.error('Error deleting movement:', error);
             alert('Failed to delete movement');
+        }
+    }
+}
+
+// Load movements by product (for filtering)
+async function loadMovementsByProduct(productId) {
+    try {
+        const movements = await apiCall(`/stock-movements/product/${productId}`);
+        return movements;
+    } catch (error) {
+        console.error('Error loading movements by product:', error);
+        return [];
+    }
+}
+
+// Load movements by warehouse (for filtering)
+async function loadMovementsByWarehouse(warehouseId) {
+    try {
+        const movements = await apiCall(`/stock-movements/warehouse/${warehouseId}`);
+        return movements;
+    } catch (error) {
+        console.error('Error loading movements by warehouse:', error);
+        return [];
+    }
+}
+
+// Complete stock movement
+async function completeMovement(movementId) {
+    try {
+        const completedMovement = await apiCall(`/stock-movements/${movementId}/complete`, {
+            method: 'PUT'
+        });
+
+        // Reload movements to reflect the change
+        await loadMovements();
+        alert('Movement completed successfully');
+    } catch (error) {
+        console.error('Error completing movement:', error);
+        alert('Failed to complete movement');
+    }
+}
+
+// Cancel stock movement
+async function cancelMovement(movementId) {
+    if (confirm('Are you sure you want to cancel this movement?')) {
+        try {
+            const cancelledMovement = await apiCall(`/stock-movements/${movementId}/cancel`, {
+                method: 'PUT'
+            });
+
+            // Reload movements to reflect the change
+            await loadMovements();
+            alert('Movement cancelled successfully');
+        } catch (error) {
+            console.error('Error cancelling movement:', error);
+            alert('Failed to cancel movement');
         }
     }
 }

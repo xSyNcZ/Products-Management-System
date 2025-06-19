@@ -184,6 +184,7 @@ h1 {
     transition: all 0.3s ease;
     background: white;
     font-family: inherit;
+    box-sizing: border-box;
 }
 
 .form-group input:focus,
@@ -210,6 +211,13 @@ textarea {
 .form-col-4 { flex: 0 0 33.333%; }
 .form-col-3 { flex: 0 0 25%; }
 
+.form-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
 /* ===========================================
    BUTTONS
    =========================================== */
@@ -229,6 +237,7 @@ textarea {
     font-family: inherit;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    margin: 2px;
 }
 
 .btn:disabled {
@@ -262,11 +271,29 @@ textarea {
     color: white;
 }
 
-.btn-edit {
-    background: #28a745;
+.btn-success:hover:not(:disabled) {
+    background: #218838;
+    transform: translateY(-2px);
+}
+
+.btn-info {
+    background: #17a2b8;
     color: white;
-    padding: 8px 15px;
-    font-size: 14px;
+}
+
+.btn-info:hover:not(:disabled) {
+    background: #138496;
+    transform: translateY(-2px);
+}
+
+.btn-warning {
+    background: #ffc107;
+    color: #212529;
+}
+
+.btn-warning:hover:not(:disabled) {
+    background: #e0a800;
+    transform: translateY(-2px);
 }
 
 .btn-danger, .btn-delete {
@@ -274,9 +301,16 @@ textarea {
     color: white;
 }
 
-.btn-warning {
-    background: #ffc107;
-    color: #212529;
+.btn-danger:hover:not(:disabled), .btn-delete:hover:not(:disabled) {
+    background: #c82333;
+    transform: translateY(-2px);
+}
+
+.btn-edit {
+    background: #28a745;
+    color: white;
+    padding: 8px 15px;
+    font-size: 14px;
 }
 
 .btn-sm {
@@ -385,7 +419,8 @@ textarea {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
-.table, .order-table, .stock-table {
+table,
+.table, .order-table, .stock-table, .items-table {
     width: 100%;
     border-collapse: collapse;
     margin: 0;
@@ -393,19 +428,30 @@ textarea {
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-top: 10px;
 }
 
+table th, table td,
 .table th, .table td,
 .order-table th, .order-table td,
-.stock-table th, .stock-table td {
+.stock-table th, .stock-table td,
+.items-table th, .items-table td {
     padding: 12px;
     text-align: left;
     border-bottom: 1px solid #eee;
 }
 
+.items-table th,
+.items-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+}
+
+table th,
 .table th,
 .order-table th,
-.stock-table th {
+.stock-table th,
+.items-table th {
     background: #f8f9fa;
     font-weight: 600;
     color: #333;
@@ -414,6 +460,11 @@ textarea {
     letter-spacing: 0.5px;
 }
 
+.items-table th {
+    background-color: #f5f5f5;
+}
+
+table tbody tr:hover,
 .table tbody tr:hover,
 .order-table tbody tr:hover,
 .stock-table tbody tr:hover {
@@ -439,12 +490,35 @@ textarea {
     gap: 4px;
 }
 
-.badge-success, .status-delivered, .status-shipped { background: #d4edda; color: #155724; }
-.badge-warning, .status-pending { background: #fff3cd; color: #856404; }
-.badge-danger, .status-cancelled { background: #f8d7da; color: #721c24; }
-.badge-info, .status-processing { background: #d1ecf1; color: #0c5460; }
-.badge-secondary { background: #e2e3e5; color: #383d41; }
-.badge-primary { background: rgba(102, 126, 234, 0.1); color: #667eea; }
+.badge-success, .status-delivered, .status-shipped, .status-badge.paid {
+    background: #d4edda;
+    color: #155724;
+}
+
+.badge-warning, .status-pending, .status-badge.pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.badge-danger, .status-cancelled, .status-badge.failed {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.badge-info, .status-processing {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.badge-secondary {
+    background: #e2e3e5;
+    color: #383d41;
+}
+
+.badge-primary {
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+}
 
 .movement-in { background: #d4edda; color: #155724; }
 .movement-out { background: #f8d7da; color: #721c24; }
@@ -482,6 +556,11 @@ textarea {
     max-width: 600px;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
     animation: modalSlideIn 0.3s ease-out;
+    position: relative;
+}
+
+.modal-content.large {
+    max-width: 900px;
 }
 
 @keyframes modalSlideIn {
@@ -508,7 +587,7 @@ textarea {
     border: none;
     font-size: 24px;
     cursor: pointer;
-    color: #999;
+    color: #aaa;
     width: 30px;
     height: 30px;
     display: flex;
@@ -516,6 +595,7 @@ textarea {
     justify-content: center;
     border-radius: 6px;
     transition: all 0.3s ease;
+    float: right;
 }
 
 .close:hover {
@@ -599,6 +679,58 @@ textarea {
     color: #333;
     margin-bottom: 20px;
     font-size: 1.5rem;
+}
+
+/* Controls */
+.controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.search-box {
+    display: flex;
+    gap: 10px;
+}
+
+.search-box input {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+/* Invoice Specific */
+.invoice-details {
+    max-width: 100%;
+}
+
+.invoice-header {
+    text-align: center;
+    margin-bottom: 30px;
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 15px;
+}
+
+.customer-info,
+.order-items,
+.payment-info,
+.invoice-summary {
+    margin-bottom: 20px;
+}
+
+.invoice-summary {
+    text-align: right;
+    margin-top: 20px;
+    border-top: 2px solid #007bff;
+    padding-top: 15px;
+}
+
+.payment-item {
+    margin-bottom: 15px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
 }
 
 /* Permissions & Roles */

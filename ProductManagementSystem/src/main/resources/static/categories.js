@@ -1,9 +1,10 @@
-// Category Management JavaScript
-// This file handles all category-related operations
+// Category Management JavaScript - API Connected
+// This file handles all category-related operations with backend API
 
 // Global variables
 let categories = [];
 let currentCategoryId = null;
+const API_BASE_URL = 'http://localhost:8080/api';
 
 // Initialize the page when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
@@ -33,73 +34,97 @@ function setupEventListeners() {
     document.getElementById('categorySearch').addEventListener('input', filterCategories);
 }
 
-// Load categories from localStorage
-function loadCategories() {
-    try {
-        const storedCategories = localStorage.getItem('categories');
-        categories = storedCategories ? JSON.parse(storedCategories) : getSampleCategories();
+// Get authentication headers
+function getAuthHeaders() {
+    const token = localStorage.getItem('authToken');
+    return {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    };
+}
 
-        // If no stored categories, save sample data
-        if (!storedCategories) {
-            saveCategories();
+// Load categories from API
+async function loadCategories() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/categories`, {
+            method: 'GET',
+            headers: getAuthHeaders()
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
 
+        categories = await response.json();
         renderCategoriesTable();
     } catch (error) {
         console.error('Error loading categories:', error);
-        categories = getSampleCategories();
-        renderCategoriesTable();
+        showNotification('Failed to load categories. Please check your connection.', 'error');
+
+        // Fallback to sample data for development
+        /*categories = getSampleCategories();
+        renderCategoriesTable();*/
     }
 }
 
-// Get sample categories data
-function getSampleCategories() {
+// Get sample categories data (fallback for development)
+/*function getSampleCategories() {
     return [
         {
             id: 1,
             name: 'Electronics',
             description: 'Electronic devices and accessories',
-            productCount: 15
+            subCategoryIds: []
         },
         {
             id: 2,
             name: 'Clothing',
             description: 'Apparel and fashion items',
-            productCount: 8
+            subCategoryIds: []
         },
         {
             id: 3,
             name: 'Books',
             description: 'Books and educational materials',
-            productCount: 12
+            subCategoryIds: []
         },
         {
             id: 4,
             name: 'Home & Garden',
             description: 'Home improvement and gardening supplies',
-            productCount: 6
+            subCategoryIds: []
         },
         {
             id: 5,
             name: 'Sports',
             description: 'Sports equipment and accessories',
-            productCount: 9
+            subCategoryIds: []
         }
     ];
-}
+}*/
 
-// Save categories to localStorage
-function saveCategories() {
+// Get product count for a category (this would need a products API endpoint)
+async function getProductCountForCategory(categoryId) {
     try {
-        localStorage.setItem('categories', JSON.stringify(categories));
+        // This endpoint would need to be implemented in your backend
+        const response = await fetch(`${API_BASE_URL}/products/count-by-category/${categoryId}`, {
+            method: 'GET',
+            headers: getAuthHeaders()
+        });
+
+        if (response.ok) {
+            const count = await response.json();
+            return count;
+        }
+        return 0;
     } catch (error) {
-        console.error('Error saving categories:', error);
-        showNotification('Error saving categories', 'error');
+        console.error('Error getting product count:', error);
+        return 0;
     }
 }
 
 // Render categories table
-function renderCategoriesTable() {
+async function renderCategoriesTable() {
     const tbody = document.getElementById('categoriesTableBody');
 
     if (categories.length === 0) {
@@ -107,7 +132,15 @@ function renderCategoriesTable() {
         return;
     }
 
-    tbody.innerHTML = categories.map(category => `
+    // Get product counts for all categories
+    const categoriesWithCounts = await Promise.all(
+        categories.map(async (category) => {
+            const productCount = await getProductCountForCategory(category.id);
+            return { ...category, productCount };
+        })
+    );
+
+    tbody.innerHTML = categoriesWithCounts.map(category => `
         <tr>
             <td>${category.id}</td>
             <td>${escapeHtml(category.name)}</td>
@@ -154,7 +187,7 @@ function editCategory(id) {
 }
 
 // Handle category form submission
-function handleCategorySubmit(event) {
+async function handleCategorySubmit(event) {
     event.preventDefault();
 
     const formData = new FormData(event.target);
@@ -169,69 +202,96 @@ function handleCategorySubmit(event) {
         return;
     }
 
-    // Check for duplicate names (excluding current category when editing)
-    const duplicateCategory = categories.find(c =>
-        c.name.toLowerCase() === categoryData.name.toLowerCase() &&
-        c.id !== currentCategoryId
-    );
+    try {
+        let response;
 
-    if (duplicateCategory) {
-        showNotification('Category name already exists', 'error');
-        return;
-    }
-
-    if (currentCategoryId) {
-        // Update existing category
-        const categoryIndex = categories.findIndex(c => c.id === currentCategoryId);
-        if (categoryIndex !== -1) {
-            categories[categoryIndex] = {
-                ...categories[categoryIndex],
-                ...categoryData
-            };
-            showNotification('Category updated successfully', 'success');
+        if (currentCategoryId) {
+            // Update existing category
+            categoryData.id = currentCategoryId;
+            response = await fetch(`${API_BASE_URL}/categories/${currentCategoryId}`, {
+                method: 'PUT',
+                headers: getAuthHeaders(),
+                body: JSON.stringify(categoryData)
+            });
+        } else {
+            // Create new category
+            response = await fetch(`${API_BASE_URL}/categories`, {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify(categoryData)
+            });
         }
-    } else {
-        // Create new category
-        const newCategory = {
-            id: Math.max(...categories.map(c => c.id), 0) + 1,
-            ...categoryData,
-            productCount: 0
-        };
-        categories.push(newCategory);
-        showNotification('Category created successfully', 'success');
-    }
 
-    saveCategories();
-    renderCategoriesTable();
-    closeCategoryModal();
+        if (!response.ok) {
+            const errorData = await response.text();
+            throw new Error(`HTTP error! status: ${response.status}, message: ${errorData}`);
+        }
+
+        const savedCategory = await response.json();
+
+        if (currentCategoryId) {
+            // Update local categories array
+            const categoryIndex = categories.findIndex(c => c.id === currentCategoryId);
+            if (categoryIndex !== -1) {
+                categories[categoryIndex] = savedCategory;
+            }
+            showNotification('Category updated successfully', 'success');
+        } else {
+            // Add new category to local array
+            categories.push(savedCategory);
+            showNotification('Category created successfully', 'success');
+        }
+
+        renderCategoriesTable();
+        closeCategoryModal();
+    } catch (error) {
+        console.error('Error saving category:', error);
+        showNotification('Failed to save category: ' + error.message, 'error');
+    }
 }
 
 // Delete category
-function deleteCategory(id) {
+async function deleteCategory(id) {
     const category = categories.find(c => c.id === id);
     if (!category) {
         showNotification('Category not found', 'error');
         return;
     }
 
-    if (category.productCount > 0) {
-        if (!confirm(`This category contains ${category.productCount} products. Are you sure you want to delete it?`)) {
-            return;
-        }
-    } else {
-        if (!confirm('Are you sure you want to delete this category?')) {
-            return;
-        }
+    // Get product count for confirmation
+    const productCount = await getProductCountForCategory(id);
+
+    let confirmMessage = 'Are you sure you want to delete this category?';
+    if (productCount > 0) {
+        confirmMessage = `This category contains ${productCount} products. Are you sure you want to delete it?`;
     }
 
-    categories = categories.filter(c => c.id !== id);
-    saveCategories();
-    renderCategoriesTable();
-    showNotification('Category deleted successfully', 'success');
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/categories/${id}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        // Remove from local categories array
+        categories = categories.filter(c => c.id !== id);
+        renderCategoriesTable();
+        showNotification('Category deleted successfully', 'success');
+    } catch (error) {
+        console.error('Error deleting category:', error);
+        showNotification('Failed to delete category: ' + error.message, 'error');
+    }
 }
 
 // View products in category
-function viewCategoryProducts(categoryId) {
+async function viewCategoryProducts(categoryId) {
     const category = categories.find(c => c.id === categoryId);
     if (!category) {
         showNotification('Category not found', 'error');
@@ -239,20 +299,37 @@ function viewCategoryProducts(categoryId) {
     }
 
     document.getElementById('productsModalTitle').textContent = `Products in "${category.name}"`;
-    loadCategoryProducts(categoryId);
+    await loadCategoryProducts(categoryId);
     document.getElementById('productsModal').style.display = 'block';
 }
 
 // Load products for a specific category
-function loadCategoryProducts(categoryId) {
-    // This would typically load from your products data
-    // For now, we'll show sample products
-    const sampleProducts = getSampleProductsForCategory(categoryId);
-    renderCategoryProducts(sampleProducts);
+async function loadCategoryProducts(categoryId) {
+    try {
+        // This endpoint would need to be implemented in your backend
+        const response = await fetch(`${API_BASE_URL}/products/by-category/${categoryId}`, {
+            method: 'GET',
+            headers: getAuthHeaders()
+        });
+
+        if (response.ok) {
+            const products = await response.json();
+            renderCategoryProducts(products);
+        } else {
+            // Fallback to sample data
+            /*const sampleProducts = getSampleProductsForCategory(categoryId);
+            renderCategoryProducts(sampleProducts);*/
+        }
+    } catch (error) {
+        console.error('Error loading category products:', error);
+        // Fallback to sample data
+        /*const sampleProducts = getSampleProductsForCategory(categoryId);
+        renderCategoryProducts(sampleProducts);*/
+    }
 }
 
-// Get sample products for a category
-function getSampleProductsForCategory(categoryId) {
+// Get sample products for a category (fallback)
+/*function getSampleProductsForCategory(categoryId) {
     const productsByCategory = {
         1: [ // Electronics
             { id: 1, name: 'Smartphone', price: 699.99, description: 'Latest smartphone with advanced features' },
@@ -278,7 +355,7 @@ function getSampleProductsForCategory(categoryId) {
     };
 
     return productsByCategory[categoryId] || [];
-}
+}*/
 
 // Render category products
 function renderCategoryProducts(products) {
@@ -293,7 +370,7 @@ function renderCategoryProducts(products) {
         <tr>
             <td>${product.id}</td>
             <td>${escapeHtml(product.name)}</td>
-            <td>$${product.price.toFixed(2)}</td>
+            <td>$${product.price ? product.price.toFixed(2) : '0.00'}</td>
             <td>${escapeHtml(product.description || 'No description')}</td>
             <td class="actions">
                 <button onclick="editProduct(${product.id})" class="btn btn-sm btn-primary" title="Edit Product">
@@ -308,23 +385,50 @@ function renderCategoryProducts(products) {
 }
 
 // Filter categories based on search input
-function filterCategories() {
-    const searchTerm = document.getElementById('categorySearch').value.toLowerCase();
-    const filteredCategories = categories.filter(category =>
-        category.name.toLowerCase().includes(searchTerm) ||
-        (category.description && category.description.toLowerCase().includes(searchTerm))
-    );
+async function filterCategories() {
+    const searchTerm = document.getElementById('categorySearch').value.trim();
 
-    // Temporarily replace categories array for rendering
-    const originalCategories = categories;
-    categories = filteredCategories;
-    renderCategoriesTable();
-    categories = originalCategories;
+    if (!searchTerm) {
+        // If empty search, reload all categories
+        await loadCategories();
+        return;
+    }
+
+    try {
+        // Use the search endpoint from your CategoryController
+        const response = await fetch(`${API_BASE_URL}/categories/search?query=${encodeURIComponent(searchTerm)}`, {
+            method: 'GET',
+            headers: getAuthHeaders()
+        });
+
+        if (response.ok) {
+            const filteredCategories = await response.json();
+            // Temporarily replace categories array for rendering
+            const originalCategories = categories;
+            categories = filteredCategories;
+            renderCategoriesTable();
+            categories = originalCategories;
+        } else {
+            throw new Error('Search failed');
+        }
+    } catch (error) {
+        console.error('Error searching categories:', error);
+        // Fallback to client-side filtering
+        const filteredCategories = categories.filter(category =>
+            category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (category.description && category.description.toLowerCase().includes(searchTerm.toLowerCase()))
+        );
+
+        const originalCategories = categories;
+        categories = filteredCategories;
+        renderCategoriesTable();
+        categories = originalCategories;
+    }
 }
 
 // Refresh categories
-function refreshCategories() {
-    loadCategories();
+async function refreshCategories() {
+    await loadCategories();
     document.getElementById('categorySearch').value = '';
     showNotification('Categories refreshed', 'info');
 }
@@ -345,13 +449,25 @@ function editProduct(productId) {
     showNotification(`Edit product ${productId} - This would redirect to products page`, 'info');
 }
 
-function removeFromCategory(productId) {
+async function removeFromCategory(productId) {
     if (confirm('Remove this product from the category?')) {
-        showNotification(`Product ${productId} removed from category`, 'success');
-        // Refresh the products list
-        const currentCategoryId = getCurrentCategoryIdFromModal();
-        if (currentCategoryId) {
-            loadCategoryProducts(currentCategoryId);
+        try {
+            // This would need to be implemented in your backend
+            // const response = await fetch(`${API_BASE_URL}/products/${productId}/remove-category`, {
+            //     method: 'PUT',
+            //     headers: getAuthHeaders()
+            // });
+
+            showNotification(`Product ${productId} removed from category`, 'success');
+
+            // Refresh the products list
+            const currentCategoryId = getCurrentCategoryIdFromModal();
+            if (currentCategoryId) {
+                await loadCategoryProducts(currentCategoryId);
+            }
+        } catch (error) {
+            console.error('Error removing product from category:', error);
+            showNotification('Failed to remove product from category', 'error');
         }
     }
 }
@@ -402,7 +518,8 @@ function showNotification(message, type = 'info') {
 // Logout function
 function logout() {
     if (confirm('Are you sure you want to logout?')) {
-        // Clear any session data if needed
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('currentUser');
         window.location.href = 'login.html';
     }
 }

@@ -1,21 +1,28 @@
 // Products Management JavaScript
-// Fixed version that works with the HTML structure and uses localStorage
+// Updated version that connects to Spring Boot API
 
 // Global variables
 let products = [];
 let categories = [];
 let currentProductId = null;
 
+// API Base URL
+const API_BASE_URL = 'http://localhost:8080/api';
+
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     loadCategories();
     loadProducts();
     setupEventListeners();
-    populateCategories();
 });
 
 // Setup event listeners
 function setupEventListeners() {
+    // Remove any existing event listeners to prevent duplicates
+    const form = document.getElementById('productForm');
+    const newForm = form.cloneNode(true);
+    form.parentNode.replaceChild(newForm, form);
+
     // Product form submission
     document.getElementById('productForm').addEventListener('submit', saveProduct);
 
@@ -31,37 +38,67 @@ function setupEventListeners() {
     document.getElementById('searchInput').addEventListener('input', filterProducts);
 }
 
-// Load categories from localStorage (or get sample data)
-function loadCategories() {
+// API Helper function
+async function apiCall(url, options = {}) {
     try {
-        const storedCategories = localStorage.getItem('categories');
-        categories = storedCategories ? JSON.parse(storedCategories) : getSampleCategories();
+        const response = await fetch(url, {
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            },
+            ...options
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+
+        // Check if response has content
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            return await response.json();
+        }
+        return null;
     } catch (error) {
-        console.error('Error loading categories:', error);
-        categories = getSampleCategories();
+        console.error('API call failed:', error);
+        throw error;
     }
 }
 
-// Load products from localStorage (or get sample data)
-function loadProducts() {
+// Load categories from API
+async function loadCategories() {
     try {
-        const storedProducts = localStorage.getItem('products');
-        products = storedProducts ? JSON.parse(storedProducts) : getSampleProducts();
+        const response = await apiCall(`${API_BASE_URL}/categories`);
+        categories = response || [];
+        populateCategories();
+    } catch (error) {
+        console.error('Error loading categories:', error);
+        showNotification('Failed to load categories', 'error');
+        // Fallback to sample categories for demo
+        categories = getSampleCategories();
+        populateCategories();
+    }
+}
 
-        // If no stored products, save sample data
-        if (!storedProducts) {
-            saveProducts();
-        }
-
+// Load products from API
+async function loadProducts() {
+    try {
+        showLoading(true);
+        const response = await apiCall(`${API_BASE_URL}/products`);
+        products = response || [];
         renderProductsTable();
     } catch (error) {
         console.error('Error loading products:', error);
-        products = getSampleProducts();
+        showNotification('Failed to load products', 'error');
+        products = [];
         renderProductsTable();
+    } finally {
+        showLoading(false);
     }
 }
 
-// Get sample categories
+// Get sample categories (fallback)
 function getSampleCategories() {
     return [
         { id: 1, name: 'Electronics', description: 'Electronic devices and accessories' },
@@ -70,92 +107,6 @@ function getSampleCategories() {
         { id: 4, name: 'Home & Garden', description: 'Home improvement and gardening supplies' },
         { id: 5, name: 'Sports', description: 'Sports equipment and accessories' }
     ];
-}
-
-// Get sample products
-function getSampleProducts() {
-    return [
-        {
-            id: 1,
-            name: 'Smartphone Pro',
-            description: 'Latest flagship smartphone with advanced camera and AI features',
-            price: 999.99,
-            categoryId: 1
-        },
-        {
-            id: 2,
-            name: 'Gaming Laptop',
-            description: 'High-performance laptop for gaming and professional work',
-            price: 1599.99,
-            categoryId: 1
-        },
-        {
-            id: 3,
-            name: 'Wireless Headphones',
-            description: 'Premium noise-canceling wireless headphones',
-            price: 299.99,
-            categoryId: 1
-        },
-        {
-            id: 4,
-            name: 'Cotton T-Shirt',
-            description: 'Comfortable 100% cotton t-shirt in various colors',
-            price: 24.99,
-            categoryId: 2
-        },
-        {
-            id: 5,
-            name: 'Denim Jeans',
-            description: 'Classic straight-fit denim jeans',
-            price: 79.99,
-            categoryId: 2
-        },
-        {
-            id: 6,
-            name: 'Programming Guide',
-            description: 'Comprehensive guide to modern programming languages',
-            price: 49.99,
-            categoryId: 3
-        },
-        {
-            id: 7,
-            name: 'Mystery Novel',
-            description: 'Bestselling mystery thriller novel',
-            price: 16.99,
-            categoryId: 3
-        },
-        {
-            id: 8,
-            name: 'Garden Tool Set',
-            description: 'Complete 12-piece garden tool set with storage bag',
-            price: 89.99,
-            categoryId: 4
-        },
-        {
-            id: 9,
-            name: 'Indoor Plant Pot',
-            description: 'Decorative ceramic pot perfect for indoor plants',
-            price: 34.99,
-            categoryId: 4
-        },
-        {
-            id: 10,
-            name: 'Basketball',
-            description: 'Official size basketball for indoor and outdoor play',
-            price: 39.99,
-            categoryId: 5
-        }
-    ];
-}
-
-// Save products to localStorage
-function saveProducts() {
-    try {
-        localStorage.setItem('products', JSON.stringify(products));
-    } catch (error) {
-        console.error('Error saving products:', error);
-        showNotification('Error saving products', 'error');
-    }
 }
 
 // Render products table
@@ -168,14 +119,14 @@ function renderProductsTable() {
     }
 
     tbody.innerHTML = products.map(product => {
-        const category = categories.find(c => c.id === product.categoryId);
+        const categoryName = product.categoryName || 'Uncategorized';
         return `
             <tr>
                 <td>${product.id}</td>
                 <td>${escapeHtml(product.name)}</td>
                 <td>${escapeHtml(product.description || 'No description')}</td>
                 <td>$${product.price ? product.price.toFixed(2) : '0.00'}</td>
-                <td>${category ? escapeHtml(category.name) : 'Uncategorized'}</td>
+                <td>${escapeHtml(categoryName)}</td>
                 <td class="actions">
                     <button onclick="editProduct(${product.id})" class="btn btn-sm btn-primary" title="Edit">
                         <i class="fas fa-edit"></i>
@@ -223,24 +174,33 @@ function showAddProductModal() {
 }
 
 // Edit product
-function editProduct(id) {
-    const product = products.find(p => p.id === id);
-    if (!product) {
-        showNotification('Product not found', 'error');
-        return;
-    }
+async function editProduct(id) {
+    try {
+        showLoading(true);
+        const product = await apiCall(`${API_BASE_URL}/products/${id}`);
 
-    currentProductId = id;
-    document.getElementById('modalTitle').textContent = 'Edit Product';
-    document.getElementById('productName').value = product.name;
-    document.getElementById('productDescription').value = product.description || '';
-    document.getElementById('productPrice').value = product.price || '';
-    document.getElementById('productCategory').value = product.categoryId || '';
-    document.getElementById('productModal').style.display = 'block';
+        if (!product) {
+            showNotification('Product not found', 'error');
+            return;
+        }
+
+        currentProductId = id;
+        document.getElementById('modalTitle').textContent = 'Edit Product';
+        document.getElementById('productName').value = product.name || '';
+        document.getElementById('productDescription').value = product.description || '';
+        document.getElementById('productPrice').value = product.price || '';
+        document.getElementById('productCategory').value = product.categoryId || '';
+        document.getElementById('productModal').style.display = 'block';
+    } catch (error) {
+        console.error('Error loading product:', error);
+        showNotification('Failed to load product details', 'error');
+    } finally {
+        showLoading(false);
+    }
 }
 
 // Save product (create or update)
-function saveProduct(event) {
+async function saveProduct(event) {
     event.preventDefault();
 
     const name = document.getElementById('productName').value.trim();
@@ -259,17 +219,6 @@ function saveProduct(event) {
         return;
     }
 
-    // Check for duplicate names (excluding current product when editing)
-    const duplicateProduct = products.find(p =>
-        p.name.toLowerCase() === name.toLowerCase() &&
-        p.id !== currentProductId
-    );
-
-    if (duplicateProduct) {
-        showNotification('Product name already exists', 'error');
-        return;
-    }
-
     const productData = {
         name,
         description,
@@ -277,33 +226,43 @@ function saveProduct(event) {
         categoryId
     };
 
-    if (currentProductId) {
-        // Update existing product
-        const productIndex = products.findIndex(p => p.id === currentProductId);
-        if (productIndex !== -1) {
-            products[productIndex] = {
-                ...products[productIndex],
-                ...productData
-            };
-            showNotification('Product updated successfully', 'success');
-        }
-    } else {
-        // Create new product
-        const newProduct = {
-            id: Math.max(...products.map(p => p.id), 0) + 1,
-            ...productData
-        };
-        products.push(newProduct);
-        showNotification('Product created successfully', 'success');
-    }
+    try {
+        showLoading(true);
 
-    saveProducts();
-    renderProductsTable();
-    closeModal();
+        if (currentProductId) {
+            // Update existing product
+            await apiCall(`${API_BASE_URL}/products/${currentProductId}`, {
+                method: 'PUT',
+                body: JSON.stringify(productData)
+            });
+            showNotification('Product updated successfully', 'success');
+        } else {
+            // Create new product
+            await apiCall(`${API_BASE_URL}/products`, {
+                method: 'POST',
+                body: JSON.stringify(productData)
+            });
+            showNotification('Product created successfully', 'success');
+        }
+
+        await loadProducts(); // Reload products
+        closeModal();
+    } catch (error) {
+        console.error('Error saving product:', error);
+        if (error.message.includes('409')) {
+            showNotification('Product with this SKU already exists', 'error');
+        } else if (error.message.includes('400')) {
+            showNotification('Invalid product data', 'error');
+        } else {
+            showNotification('Failed to save product', 'error');
+        }
+    } finally {
+        showLoading(false);
+    }
 }
 
 // Delete product
-function deleteProduct(id) {
+async function deleteProduct(id) {
     const product = products.find(p => p.id === id);
     if (!product) {
         showNotification('Product not found', 'error');
@@ -314,14 +273,66 @@ function deleteProduct(id) {
         return;
     }
 
-    products = products.filter(p => p.id !== id);
-    saveProducts();
-    renderProductsTable();
-    showNotification('Product deleted successfully', 'success');
+    try {
+        showLoading(true);
+        await apiCall(`${API_BASE_URL}/products/${id}`, {
+            method: 'DELETE'
+        });
+
+        showNotification('Product deleted successfully', 'success');
+        await loadProducts(); // Reload products
+    } catch (error) {
+        console.error('Error deleting product:', error);
+        showNotification('Failed to delete product', 'error');
+    } finally {
+        showLoading(false);
+    }
 }
 
 // Filter products based on search and category
-function filterProducts() {
+async function filterProducts() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+    const selectedCategoryId = parseInt(document.getElementById('categoryFilter').value) || null;
+
+    try {
+        showLoading(true);
+        let url = `${API_BASE_URL}/products`;
+        let filteredProducts = [];
+
+        if (searchTerm && selectedCategoryId) {
+            // If both search and category are specified, we need to fetch all and filter locally
+            // since the API doesn't support combined search
+            const allProducts = await apiCall(url);
+            filteredProducts = allProducts.filter(product => {
+                const matchesSearch = product.name.toLowerCase().includes(searchTerm) ||
+                    (product.description && product.description.toLowerCase().includes(searchTerm));
+                const matchesCategory = product.categoryId === selectedCategoryId;
+                return matchesSearch && matchesCategory;
+            });
+        } else if (searchTerm) {
+            // Search by name
+            filteredProducts = await apiCall(`${url}/search?name=${encodeURIComponent(searchTerm)}`);
+        } else if (selectedCategoryId) {
+            // Filter by category
+            filteredProducts = await apiCall(`${url}/category/${selectedCategoryId}`);
+        } else {
+            // No filters, show all products
+            filteredProducts = await apiCall(url);
+        }
+
+        renderFilteredProducts(filteredProducts || []);
+    } catch (error) {
+        console.error('Error filtering products:', error);
+        showNotification('Failed to filter products', 'error');
+        // Fallback to local filtering
+        filterProductsLocally();
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Fallback local filtering when API fails
+function filterProductsLocally() {
     const searchTerm = document.getElementById('searchInput').value.toLowerCase();
     const selectedCategoryId = parseInt(document.getElementById('categoryFilter').value) || null;
 
@@ -342,7 +353,6 @@ function filterProducts() {
         );
     }
 
-    // Render filtered results
     renderFilteredProducts(filteredProducts);
 }
 
@@ -356,14 +366,14 @@ function renderFilteredProducts(filteredProducts) {
     }
 
     tbody.innerHTML = filteredProducts.map(product => {
-        const category = categories.find(c => c.id === product.categoryId);
+        const categoryName = product.categoryName || 'Uncategorized';
         return `
             <tr>
                 <td>${product.id}</td>
                 <td>${escapeHtml(product.name)}</td>
                 <td>${escapeHtml(product.description || 'No description')}</td>
                 <td>$${product.price ? product.price.toFixed(2) : '0.00'}</td>
-                <td>${category ? escapeHtml(category.name) : 'Uncategorized'}</td>
+                <td>${escapeHtml(categoryName)}</td>
                 <td class="actions">
                     <button onclick="editProduct(${product.id})" class="btn btn-sm btn-primary" title="Edit">
                         <i class="fas fa-edit"></i>
@@ -383,8 +393,50 @@ function closeModal() {
     currentProductId = null;
 }
 
+// Show/hide loading indicator
+function showLoading(show) {
+    // Create loading overlay if it doesn't exist
+    let loadingOverlay = document.getElementById('loadingOverlay');
+    if (!loadingOverlay) {
+        loadingOverlay = document.createElement('div');
+        loadingOverlay.id = 'loadingOverlay';
+        loadingOverlay.innerHTML = `
+            <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>Loading...</span>
+            </div>
+        `;
+        loadingOverlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        `;
+
+        const spinner = loadingOverlay.querySelector('.loading-spinner');
+        spinner.style.cssText = `
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            color: #333;
+        `;
+
+        document.body.appendChild(loadingOverlay);
+    }
+
+    loadingOverlay.style.display = show ? 'flex' : 'none';
+}
+
 // Utility function to escape HTML
 function escapeHtml(text) {
+    if (!text) return '';
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
@@ -410,6 +462,8 @@ function showNotification(message, type = 'info') {
         opacity: 0;
         transform: translateX(100px);
         transition: all 0.3s ease;
+        max-width: 300px;
+        word-wrap: break-word;
     `;
 
     // Set background color based on type
@@ -436,7 +490,7 @@ function showNotification(message, type = 'info') {
         notification.style.transform = 'translateX(0)';
     }, 100);
 
-    // Remove notification after 3 seconds
+    // Remove notification after 4 seconds
     setTimeout(() => {
         notification.style.opacity = '0';
         notification.style.transform = 'translateX(100px)';
@@ -445,5 +499,5 @@ function showNotification(message, type = 'info') {
                 document.body.removeChild(notification);
             }
         }, 300);
-    }, 3000);
+    }, 4000);
 }

@@ -68,6 +68,20 @@ public class OrderService {
 
     @Transactional
     public OrderDTO createOrder(OrderDTO orderDTO) {
+        // Validate required fields first
+        if (orderDTO.getCustomerId() == null) {
+            throw new IllegalArgumentException("Customer ID cannot be null");
+        }
+        if (orderDTO.getShippingAddressId() == null) {
+            throw new IllegalArgumentException("Shipping address ID cannot be null");
+        }
+        if (orderDTO.getBillingAddressId() == null) {
+            throw new IllegalArgumentException("Billing address ID cannot be null");
+        }
+        if (orderDTO.getItems() == null || orderDTO.getItems().isEmpty()) {
+            throw new IllegalArgumentException("Order must contain at least one item");
+        }
+
         User customer = userRepository.findById(orderDTO.getCustomerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + orderDTO.getCustomerId()));
 
@@ -97,6 +111,14 @@ public class OrderService {
         // Process order items
         BigDecimal totalAmount = BigDecimal.ZERO;
         for (OrderItemDTO itemDTO : orderDTO.getItems()) {
+            // Validate item fields
+            if (itemDTO.getProductId() == null) {
+                throw new IllegalArgumentException("Product ID cannot be null for order item");
+            }
+            if (itemDTO.getQuantity() == null || itemDTO.getQuantity() <= 0) {
+                throw new IllegalArgumentException("Quantity must be positive for order item");
+            }
+
             Product product = productRepository.findById(itemDTO.getProductId())
                     .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + itemDTO.getProductId()));
 

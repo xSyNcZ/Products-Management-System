@@ -89,6 +89,27 @@
                 </select>
             </div>
 
+            <!-- Address Selection Section -->
+            <div class="address-selection-section" id="addressSelectionSection" style="display: none;">
+                <h3>Address Information</h3>
+
+                <div class="form-group">
+                    <label for="shippingAddressId">Shipping Address:</label>
+                    <select id="shippingAddressId" required>
+                        <option value="">Select Shipping Address</option>
+                        <!-- Shipping addresses will be loaded here -->
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="billingAddressId">Billing Address:</label>
+                    <select id="billingAddressId" required>
+                        <option value="">Select Billing Address</option>
+                        <!-- Billing addresses will be loaded here -->
+                    </select>
+                </div>
+            </div>
+
             <div class="form-group">
                 <label>Order Items:</label>
                 <div id="orderItemsContainer">

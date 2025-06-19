@@ -1,8 +1,10 @@
-// Warehouse Management JavaScript
+// Warehouse Management JavaScript - Connected to Spring Boot API
 class WarehouseManager {
     constructor() {
-        this.apiUrl = '/api/warehouses';
-        this.stockMovementApiUrl = '/api/stock-movements';
+        // Updated API URLs to point to Spring Boot backend
+        this.baseUrl = 'http://localhost:8080';
+        this.apiUrl = `${this.baseUrl}/api/warehouses`;
+        this.stockMovementApiUrl = `${this.baseUrl}/api/stock-movements`;
         this.currentWarehouse = null;
         this.warehouses = [];
         this.userRole = this.getUserRole();
@@ -10,13 +12,17 @@ class WarehouseManager {
     }
 
     getUserRole() {
-        try {
-            const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-            return user.roles?.[0]?.name || 'USER';
-        } catch (error) {
-            console.error('Error parsing user data:', error);
-            return 'USER';
+        // Get userRoles from localStorage directly (as stored by app.js)
+        const userRoles = JSON.parse(localStorage.getItem('userRoles') || '[]');
+        console.log('User roles from localStorage:', userRoles); // Debug log
+
+        // Return the first role if available
+        if (userRoles && userRoles.length > 0) {
+            return userRoles[0];
         }
+
+        console.log('No valid role found, defaulting to USER');
+        return 'USER';
     }
 
     init() {
@@ -123,9 +129,15 @@ class WarehouseManager {
 
     async loadWarehouses() {
         try {
+            console.log('Loading warehouses from:', this.apiUrl);
+
             const response = await fetch(this.apiUrl, {
-                headers: this.getAuthHeaders()
+                method: 'GET',
+                headers: this.getAuthHeaders(),
+                mode: 'cors' // Enable CORS
             });
+
+            console.log('Response status:', response.status);
 
             if (response.status === 401) {
                 this.handleUnauthorized();
@@ -137,11 +149,20 @@ class WarehouseManager {
             }
 
             const warehouses = await response.json();
+            console.log('Loaded warehouses:', warehouses);
+
             this.warehouses = Array.isArray(warehouses) ? warehouses : [];
             this.displayWarehouses(this.warehouses);
         } catch (error) {
             console.error('Error loading warehouses:', error);
-            this.showError('Failed to load warehouses. Please try again.');
+
+            // More specific error handling
+            if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                this.showError('Cannot connect to server. Please ensure the backend is running on localhost:8080');
+            } else {
+                this.showError('Failed to load warehouses. Please try again.');
+            }
+
             this.warehouses = [];
             this.displayWarehouses([]);
         }
@@ -166,6 +187,8 @@ class WarehouseManager {
 
             const card = document.createElement('div');
             card.className = 'warehouse-card';
+
+            // Updated to match WarehouseDTO structure
             card.innerHTML = `
                 <div class="warehouse-header">
                     <h3>${this.escapeHtml(warehouse.name || 'Unnamed Warehouse')}</h3>
@@ -173,7 +196,10 @@ class WarehouseManager {
                 </div>
                 <div class="warehouse-info">
                     <p><strong>Location:</strong> ${this.escapeHtml(warehouse.location || 'Unknown')}</p>
-                    <p><strong>Stock Movements:</strong> ${warehouse.stockMovements?.length || 0}</p>
+                    <p><strong>Address:</strong> ${this.escapeHtml(warehouse.address || 'Not specified')}</p>
+                    <p><strong>Capacity:</strong> ${warehouse.capacity || 'Not specified'}</p>
+                    ${warehouse.managerName ? `<p><strong>Manager:</strong> ${this.escapeHtml(warehouse.managerName)}</p>` : ''}
+                    <p><strong>Workers:</strong> ${warehouse.workerIds?.length || 0}</p>
                 </div>
                 <div class="warehouse-actions">
                     <button class="btn btn-sm btn-info" onclick="warehouseManager.viewWarehouse(${warehouse.id})">
@@ -240,7 +266,13 @@ class WarehouseManager {
             return;
         }
 
-        const warehouseData = { name, location };
+        // Create warehouse object matching Spring Boot entity structure
+        const warehouseData = {
+            name,
+            location,
+            address: location, // Use location as address if no separate address field
+            capacity: null // Set default or add capacity field to form
+        };
 
         try {
             const url = this.currentWarehouse ?
@@ -249,14 +281,19 @@ class WarehouseManager {
 
             const method = this.currentWarehouse ? 'PUT' : 'POST';
 
+            console.log('Saving warehouse:', warehouseData, 'to:', url);
+
             const response = await fetch(url, {
                 method: method,
                 headers: {
                     ...this.getAuthHeaders(),
                     'Content-Type': 'application/json'
                 },
+                mode: 'cors',
                 body: JSON.stringify(warehouseData)
             });
+
+            console.log('Save response status:', response.status);
 
             if (response.status === 401) {
                 this.handleUnauthorized();
@@ -264,16 +301,33 @@ class WarehouseManager {
             }
 
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+                const errorText = await response.text();
+                console.error('Error response:', errorText);
+
+                let errorMessage;
+                try {
+                    const errorData = JSON.parse(errorText);
+                    errorMessage = errorData.message || errorText;
+                } catch {
+                    errorMessage = errorText || `HTTP error! status: ${response.status}`;
+                }
+                throw new Error(errorMessage);
             }
+
+            const savedWarehouse = await response.json();
+            console.log('Saved warehouse:', savedWarehouse);
 
             this.closeModal('warehouseModal');
             await this.loadWarehouses();
             this.showSuccess(this.currentWarehouse ? 'Warehouse updated successfully' : 'Warehouse created successfully');
         } catch (error) {
             console.error('Error saving warehouse:', error);
-            this.showError('Failed to save warehouse: ' + error.message);
+
+            if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                this.showError('Cannot connect to server. Please ensure the backend is running.');
+            } else {
+                this.showError('Failed to save warehouse: ' + error.message);
+            }
         }
     }
 
@@ -284,12 +338,21 @@ class WarehouseManager {
         }
 
         try {
+            console.log('Loading warehouse for edit:', id);
+
             const response = await fetch(`${this.apiUrl}/${id}`, {
-                headers: this.getAuthHeaders()
+                method: 'GET',
+                headers: this.getAuthHeaders(),
+                mode: 'cors'
             });
 
             if (response.status === 401) {
                 this.handleUnauthorized();
+                return;
+            }
+
+            if (response.status === 404) {
+                this.showError('Warehouse not found');
                 return;
             }
 
@@ -298,6 +361,7 @@ class WarehouseManager {
             }
 
             const warehouse = await response.json();
+            console.log('Loaded warehouse for edit:', warehouse);
             this.openWarehouseModal(warehouse);
         } catch (error) {
             console.error('Error loading warehouse:', error);
@@ -312,16 +376,16 @@ class WarehouseManager {
         }
 
         try {
-            const [warehouseResponse, stockMovementsResponse] = await Promise.all([
-                fetch(`${this.apiUrl}/${id}`, {
-                    headers: this.getAuthHeaders()
-                }),
-                fetch(`${this.stockMovementApiUrl}?warehouseId=${id}`, {
-                    headers: this.getAuthHeaders()
-                })
-            ]);
+            console.log('Loading warehouse details:', id);
 
-            if (warehouseResponse.status === 401 || stockMovementsResponse.status === 401) {
+            // Load warehouse details
+            const warehouseResponse = await fetch(`${this.apiUrl}/${id}`, {
+                method: 'GET',
+                headers: this.getAuthHeaders(),
+                mode: 'cors'
+            });
+
+            if (warehouseResponse.status === 401) {
                 this.handleUnauthorized();
                 return;
             }
@@ -331,12 +395,25 @@ class WarehouseManager {
             }
 
             const warehouse = await warehouseResponse.json();
-            let stockMovements = [];
+            console.log('Loaded warehouse details:', warehouse);
 
-            if (stockMovementsResponse.ok) {
-                stockMovements = await stockMovementsResponse.json();
-            } else {
-                console.warn('Failed to load stock movements');
+            // Try to load stock movements (optional - may not exist yet)
+            let stockMovements = [];
+            try {
+                const stockMovementsResponse = await fetch(`${this.stockMovementApiUrl}?warehouseId=${id}`, {
+                    method: 'GET',
+                    headers: this.getAuthHeaders(),
+                    mode: 'cors'
+                });
+
+                if (stockMovementsResponse.ok) {
+                    stockMovements = await stockMovementsResponse.json();
+                    console.log('Loaded stock movements:', stockMovements);
+                } else {
+                    console.warn('Stock movements endpoint not available or failed');
+                }
+            } catch (error) {
+                console.warn('Could not load stock movements:', error);
             }
 
             this.displayWarehouseDetails(warehouse, stockMovements);
@@ -346,7 +423,7 @@ class WarehouseManager {
         }
     }
 
-    displayWarehouseDetails(warehouse, stockMovements) {
+    displayWarehouseDetails(warehouse, stockMovements = []) {
         const content = document.getElementById('warehouseDetailsContent');
         const title = document.getElementById('warehouseDetailsTitle');
         const modal = document.getElementById('warehouseDetailsModal');
@@ -368,6 +445,10 @@ class WarehouseManager {
                     <p><strong>ID:</strong> ${warehouse.id || 'N/A'}</p>
                     <p><strong>Name:</strong> ${this.escapeHtml(warehouse.name || 'N/A')}</p>
                     <p><strong>Location:</strong> ${this.escapeHtml(warehouse.location || 'N/A')}</p>
+                    <p><strong>Address:</strong> ${this.escapeHtml(warehouse.address || 'N/A')}</p>
+                    <p><strong>Capacity:</strong> ${warehouse.capacity || 'Not specified'}</p>
+                    ${warehouse.managerName ? `<p><strong>Manager:</strong> ${this.escapeHtml(warehouse.managerName)}</p>` : '<p><strong>Manager:</strong> Not assigned</p>'}
+                    <p><strong>Workers:</strong> ${warehouse.workerIds?.length || 0}</p>
                 </div>
 
                 <div class="stock-summary-section">
@@ -463,30 +544,54 @@ class WarehouseManager {
         }
 
         try {
+            console.log('Deleting warehouse:', id);
+
             const response = await fetch(`${this.apiUrl}/${id}`, {
                 method: 'DELETE',
-                headers: this.getAuthHeaders()
+                headers: this.getAuthHeaders(),
+                mode: 'cors'
             });
+
+            console.log('Delete response status:', response.status);
 
             if (response.status === 401) {
                 this.handleUnauthorized();
                 return;
             }
 
+            if (response.status === 404) {
+                this.showError('Warehouse not found');
+                return;
+            }
+
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+                const errorText = await response.text();
+                console.error('Delete error response:', errorText);
+
+                let errorMessage;
+                try {
+                    const errorData = JSON.parse(errorText);
+                    errorMessage = errorData.message || errorText;
+                } catch {
+                    errorMessage = errorText || `HTTP error! status: ${response.status}`;
+                }
+                throw new Error(errorMessage);
             }
 
             await this.loadWarehouses();
             this.showSuccess('Warehouse deleted successfully');
         } catch (error) {
             console.error('Error deleting warehouse:', error);
-            this.showError('Failed to delete warehouse: ' + error.message);
+
+            if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                this.showError('Cannot connect to server. Please ensure the backend is running.');
+            } else {
+                this.showError('Failed to delete warehouse: ' + error.message);
+            }
         }
     }
 
-    searchWarehouses() {
+    async searchWarehouses() {
         const searchInput = document.getElementById('searchInput');
         if (!searchInput) return;
 
@@ -497,9 +602,28 @@ class WarehouseManager {
             return;
         }
 
+        // Use the Spring Boot search endpoint if available
+        try {
+            const response = await fetch(`${this.apiUrl}/search?name=${encodeURIComponent(searchTerm)}`, {
+                method: 'GET',
+                headers: this.getAuthHeaders(),
+                mode: 'cors'
+            });
+
+            if (response.ok) {
+                const searchResults = await response.json();
+                this.displayWarehouses(searchResults);
+                return;
+            }
+        } catch (error) {
+            console.warn('Server search failed, using client-side search:', error);
+        }
+
+        // Fallback to client-side filtering
         const filteredWarehouses = this.warehouses.filter(warehouse => {
             return warehouse?.name?.toLowerCase().includes(searchTerm) ||
                 warehouse?.location?.toLowerCase().includes(searchTerm) ||
+                warehouse?.address?.toLowerCase().includes(searchTerm) ||
                 warehouse?.id?.toString().includes(searchTerm);
         });
 
@@ -532,10 +656,15 @@ class WarehouseManager {
 
     getAuthHeaders() {
         const token = localStorage.getItem('authToken');
-        return {
-            'Authorization': `Bearer ${token}`,
+        const headers = {
             'Content-Type': 'application/json'
         };
+
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        return headers;
     }
 
     handleUnauthorized() {
@@ -545,11 +674,13 @@ class WarehouseManager {
 
     showSuccess(message) {
         // Replace with a better notification system if available
+        console.log('Success:', message);
         alert(message);
     }
 
     showError(message) {
         // Replace with a better notification system if available
+        console.error('Error:', message);
         alert('Error: ' + message);
     }
 
@@ -562,5 +693,6 @@ class WarehouseManager {
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('Initializing Warehouse Manager...');
     window.warehouseManager = new WarehouseManager();
 });

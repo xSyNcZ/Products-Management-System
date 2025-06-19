@@ -33,16 +33,11 @@ AFTER 7.05.2025.
 + fix database in app properties
 + fix dependencies in maven
 + create frontend
-- delete proxies and mockups and connect actual api
-- modify the frontend, so it has more functions and looks better
-[LIST OF THINGS TO ADD]:
-    - Index: Show different dashboards depending on user role (consider the README)
-    - Warehouse: Add warehouse button
-    - Stock movement: Register actual stock movement
-    - Roles: The breadcrumbs and permission visibility
-    - Permissions: breadcrumbs and visibility
+- delete proxies and mockups (or rather comment them)
+- and connect actual api
+(left to do:, permissions, roles, users)
+(fix order creation - problems with billingAdressId, ShippingAddressId, modify controller)
 - modify the recent activity in index.html so it actually sees recent activity
-- insert test data into the DB
 - test if it works
 
 [BEFORE THE FINISHING OF PROJECT]
@@ -52,6 +47,15 @@ AFTER 7.05.2025.
 - delete unnecessary imports
 - fix gitignore (optional)
 - update README
-+ Update !TODO
 
-
+FURTHER IMPROVEMENTS:
+- modify the frontend, so it has more functions and looks better
+[LIST OF THINGS TO ADD]:
+    - Index: Show different dashboards depending on user role (consider the README)
+    - Warehouse: Add warehouse button
+    - Stock movement: Register actual stock movement
+    - Roles: The breadcrumbs and permission visibility
+    - Permissions: breadcrumbs and visibility
+- insert test data into the DB
+- further development
+- Update !TODO
