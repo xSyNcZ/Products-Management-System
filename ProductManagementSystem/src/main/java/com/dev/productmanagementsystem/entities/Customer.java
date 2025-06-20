@@ -3,6 +3,7 @@ package com.dev.productmanagementsystem.entities;
 import com.dev.productmanagementsystem.enums.CustomerType;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
@@ -57,9 +58,11 @@ public class Customer {
     @JoinColumn(name = "address_id")
     private Address address;
 
+    // Updated relationship with orders - should reference Customer, not User
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private Set<Order> orders;
+    private Set<Order> orders = new HashSet<>();
 
+    // Assigned sales manager relationship
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assigned_sales_manager_id")
     private User assignedSalesManager;
@@ -73,6 +76,7 @@ public class Customer {
         this.email = email;
         this.registrationDate = LocalDateTime.now();
         this.customerNumber = generateCustomerNumber();
+        this.orders = new HashSet<>();
     }
 
     // Getters and Setters
@@ -122,10 +126,28 @@ public class Customer {
     public void setAddress(Address address) { this.address = address; }
 
     public Set<Order> getOrders() { return orders; }
-    public void setOrders(Set<Order> orders) { this.orders = orders; }
+    public void setOrders(Set<Order> orders) {
+        this.orders = orders != null ? orders : new HashSet<>();
+    }
 
     public User getAssignedSalesManager() { return assignedSalesManager; }
     public void setAssignedSalesManager(User assignedSalesManager) { this.assignedSalesManager = assignedSalesManager; }
+
+    // Helper methods for managing orders
+    public void addOrder(Order order) {
+        if (orders == null) {
+            orders = new HashSet<>();
+        }
+        orders.add(order);
+        order.setCustomer(this);
+    }
+
+    public void removeOrder(Order order) {
+        if (orders != null) {
+            orders.remove(order);
+            order.setCustomer(null);
+        }
+    }
 
     // Utility methods
     public String getFullName() {
@@ -137,6 +159,33 @@ public class Customer {
             return companyName;
         }
         return getFullName();
+    }
+
+    /**
+     * Get the total number of orders for this customer
+     */
+    public int getOrderCount() {
+        return orders != null ? orders.size() : 0;
+    }
+
+    /**
+     * Check if customer has any pending orders
+     */
+    public boolean hasPendingOrders() {
+        if (orders == null) return false;
+        return orders.stream()
+                .anyMatch(order -> order.getStatus() == com.dev.productmanagementsystem.enums.OrderStatus.PENDING);
+    }
+
+    /**
+     * Get total amount spent by customer across all orders
+     */
+    public java.math.BigDecimal getTotalSpent() {
+        if (orders == null) return java.math.BigDecimal.ZERO;
+        return orders.stream()
+                .filter(order -> order.getTotalAmount() != null)
+                .map(Order::getTotalAmount)
+                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
     }
 
     private String generateCustomerNumber() {
@@ -152,5 +201,42 @@ public class Customer {
         if (customerNumber == null) {
             customerNumber = generateCustomerNumber();
         }
+        if (orders == null) {
+            orders = new HashSet<>();
+        }
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        if (orders == null) {
+            orders = new HashSet<>();
+        }
+    }
+
+    // Override equals and hashCode for proper entity comparison
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        Customer customer = (Customer) obj;
+        return id != null && id.equals(customer.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return "Customer{" +
+                "id=" + id +
+                ", customerNumber='" + customerNumber + '\'' +
+                ", firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ", email='" + email + '\'' +
+                ", customerType=" + customerType +
+                ", isActive=" + isActive +
+                '}';
     }
 }

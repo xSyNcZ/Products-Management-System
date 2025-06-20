@@ -241,8 +241,7 @@ public class CustomerService {
 
         // Check tax ID uniqueness (if provided)
         if (customerDTO.getTaxId() != null && !customerDTO.getTaxId().trim().isEmpty()) {
-            Optional<Customer> existingByTaxId = customerRepository.findByTaxId(customerDTO.getTaxId());
-            if (existingByTaxId.isPresent() && (excludeId == null || !existingByTaxId.get().getId().equals(excludeId))) {
+            if (customerRepository.existsByTaxIdAndIdNot(customerDTO.getTaxId(), excludeId)) {
                 throw new DataIntegrityViolationException("Tax ID already exists: " + customerDTO.getTaxId());
             }
         }

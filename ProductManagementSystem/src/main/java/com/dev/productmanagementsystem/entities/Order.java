@@ -1,36 +1,38 @@
 package com.dev.productmanagementsystem.entities;
 
 import com.dev.productmanagementsystem.enums.OrderStatus;
-
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "orders")
 public class Order {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "order_number", unique = true)
+    @Column(name = "order_number", unique = true, nullable = false)
     private String orderNumber;
 
-    @ManyToOne
-    @JoinColumn(name = "customer_id")
-    private User customer;
+    // Changed from User to Customer
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_id", nullable = false)
+    private Customer customer;
 
-    @ManyToOne
+    // Sales manager remains a User
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sales_manager_id")
     private User salesManager;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status")
+    @Column(name = "status", nullable = false)
     private OrderStatus status;
 
-    @Column(name = "order_date")
+    @Column(name = "order_date", nullable = false)
     private LocalDateTime orderDate;
 
     @Column(name = "shipping_date")
@@ -39,67 +41,40 @@ public class Order {
     @Column(name = "delivery_date")
     private LocalDateTime deliveryDate;
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
-    private Set<OrderItem> items = new HashSet<>();
-
-    @ManyToOne
-    @JoinColumn(name = "shipping_address_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "shipping_address_id", nullable = false)
     private Address shippingAddress;
 
-    @ManyToOne
-    @JoinColumn(name = "billing_address_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "billing_address_id", nullable = false)
     private Address billingAddress;
 
-    @Column(name = "total_amount", precision = 10, scale = 2)
+    @Column(name = "total_amount", precision = 10, scale = 2, nullable = false)
     private BigDecimal totalAmount;
 
-    @OneToOne(mappedBy = "order")
-    private Invoice invoice;
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<OrderItem> items = new ArrayList<>();
 
     // Constructors
-    public Order() {}
+    public Order() {
+        this.orderDate = LocalDateTime.now();
+        this.status = OrderStatus.PENDING;
+        this.totalAmount = BigDecimal.ZERO;
+    }
 
-    // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Order(String orderNumber, Customer customer, User salesManager, OrderStatus status,
+                 Address shippingAddress, Address billingAddress, BigDecimal totalAmount) {
+        this();
+        this.orderNumber = orderNumber;
+        this.customer = customer;
+        this.salesManager = salesManager;
+        this.status = status;
+        this.shippingAddress = shippingAddress;
+        this.billingAddress = billingAddress;
+        this.totalAmount = totalAmount;
+    }
 
-    public String getOrderNumber() { return orderNumber; }
-    public void setOrderNumber(String orderNumber) { this.orderNumber = orderNumber; }
-
-    public User getCustomer() { return customer; }
-    public void setCustomer(User customer) { this.customer = customer; }
-
-    public User getSalesManager() { return salesManager; }
-    public void setSalesManager(User salesManager) { this.salesManager = salesManager; }
-
-    public OrderStatus getStatus() { return status; }
-    public void setStatus(OrderStatus status) { this.status = status; }
-
-    public LocalDateTime getOrderDate() { return orderDate; }
-    public void setOrderDate(LocalDateTime orderDate) { this.orderDate = orderDate; }
-
-    public LocalDateTime getShippingDate() { return shippingDate; }
-    public void setShippingDate(LocalDateTime shippingDate) { this.shippingDate = shippingDate; }
-
-    public LocalDateTime getDeliveryDate() { return deliveryDate; }
-    public void setDeliveryDate(LocalDateTime deliveryDate) { this.deliveryDate = deliveryDate; }
-
-    public Set<OrderItem> getItems() { return items; }
-    public void setItems(Set<OrderItem> items) { this.items = items; }
-
-    public Address getShippingAddress() { return shippingAddress; }
-    public void setShippingAddress(Address shippingAddress) { this.shippingAddress = shippingAddress; }
-
-    public Address getBillingAddress() { return billingAddress; }
-    public void setBillingAddress(Address billingAddress) { this.billingAddress = billingAddress; }
-
-    public BigDecimal getTotalAmount() { return totalAmount; }
-    public void setTotalAmount(BigDecimal totalAmount) { this.totalAmount = totalAmount; }
-
-    public Invoice getInvoice() { return invoice; }
-    public void setInvoice(Invoice invoice) { this.invoice = invoice; }
-
-    // Additional methods
+    // Helper methods
     public void addItem(OrderItem item) {
         items.add(item);
         item.setOrder(this);
@@ -110,9 +85,111 @@ public class Order {
         item.setOrder(null);
     }
 
-    // Auditing methods
-    @PrePersist
-    protected void onCreate() {
-        this.orderDate = LocalDateTime.now();
+    // Getters and Setters
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getOrderNumber() {
+        return orderNumber;
+    }
+
+    public void setOrderNumber(String orderNumber) {
+        this.orderNumber = orderNumber;
+    }
+
+    public Customer getCustomer() {
+        return customer;
+    }
+
+    public void setCustomer(Customer customer) {
+        this.customer = customer;
+    }
+
+    public User getSalesManager() {
+        return salesManager;
+    }
+
+    public void setSalesManager(User salesManager) {
+        this.salesManager = salesManager;
+    }
+
+    public OrderStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(OrderStatus status) {
+        this.status = status;
+    }
+
+    public LocalDateTime getOrderDate() {
+        return orderDate;
+    }
+
+    public void setOrderDate(LocalDateTime orderDate) {
+        this.orderDate = orderDate;
+    }
+
+    public LocalDateTime getShippingDate() {
+        return shippingDate;
+    }
+
+    public void setShippingDate(LocalDateTime shippingDate) {
+        this.shippingDate = shippingDate;
+    }
+
+    public LocalDateTime getDeliveryDate() {
+        return deliveryDate;
+    }
+
+    public void setDeliveryDate(LocalDateTime deliveryDate) {
+        this.deliveryDate = deliveryDate;
+    }
+
+    public Address getShippingAddress() {
+        return shippingAddress;
+    }
+
+    public void setShippingAddress(Address shippingAddress) {
+        this.shippingAddress = shippingAddress;
+    }
+
+    public Address getBillingAddress() {
+        return billingAddress;
+    }
+
+    public void setBillingAddress(Address billingAddress) {
+        this.billingAddress = billingAddress;
+    }
+
+    public BigDecimal getTotalAmount() {
+        return totalAmount;
+    }
+
+    public void setTotalAmount(BigDecimal totalAmount) {
+        this.totalAmount = totalAmount;
+    }
+
+    public List<OrderItem> getItems() {
+        return items;
+    }
+
+    public void setItems(List<OrderItem> items) {
+        this.items = items;
+    }
+
+    @Override
+    public String toString() {
+        return "Order{" +
+                "id=" + id +
+                ", orderNumber='" + orderNumber + '\'' +
+                ", status=" + status +
+                ", orderDate=" + orderDate +
+                ", totalAmount=" + totalAmount +
+                '}';
     }
 }
