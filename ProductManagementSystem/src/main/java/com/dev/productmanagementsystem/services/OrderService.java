@@ -22,8 +22,7 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
-    private final CustomerRepository customerRepository; // Changed from userRepository
-    private final UserRepository userRepository; // Keep for sales manager operations
+    private final UserRepository userRepository;
     private final ProductRepository productRepository;
     private final AddressRepository addressRepository;
     private final WarehouseRepository warehouseRepository;
@@ -31,14 +30,12 @@ public class OrderService {
     @Autowired
     public OrderService(OrderRepository orderRepository,
                         OrderItemRepository orderItemRepository,
-                        CustomerRepository customerRepository, // Added CustomerRepository
                         UserRepository userRepository,
                         ProductRepository productRepository,
                         AddressRepository addressRepository,
                         WarehouseRepository warehouseRepository) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
-        this.customerRepository = customerRepository;
         this.userRepository = userRepository;
         this.productRepository = productRepository;
         this.addressRepository = addressRepository;
@@ -85,14 +82,8 @@ public class OrderService {
             throw new IllegalArgumentException("Order must contain at least one item");
         }
 
-        // Changed to use customerRepository instead of userRepository
-        Customer customer = customerRepository.findById(orderDTO.getCustomerId())
+        User customer = userRepository.findById(orderDTO.getCustomerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + orderDTO.getCustomerId()));
-
-        // Validate customer is active
-        if (!customer.getIsActive()) {
-            throw new IllegalArgumentException("Cannot create order for inactive customer");
-        }
 
         User salesManager = null;
         if (orderDTO.getSalesManagerId() != null) {
@@ -153,10 +144,6 @@ public class OrderService {
         savedOrder.setTotalAmount(totalAmount);
         Order updatedOrder = orderRepository.save(savedOrder);
 
-        // Update the customer's orders collection (bidirectional relationship)
-        customer.addOrder(updatedOrder);
-        customerRepository.save(customer);
-
         return convertToDTO(updatedOrder);
     }
 
@@ -164,9 +151,6 @@ public class OrderService {
     public OrderDTO updateOrderStatus(Long id, OrderStatus status) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
-
-        // Validate status transition
-        validateStatusTransition(order.getStatus(), status);
 
         order.setStatus(status);
 
@@ -202,12 +186,6 @@ public class OrderService {
         // Only allow deletion of pending orders
         if (order.getStatus() != OrderStatus.PENDING) {
             throw new IllegalStateException("Cannot delete non-pending order");
-        }
-
-        Customer customer = order.getCustomer();
-        if (customer != null) {
-            customer.removeOrder(order);
-            customerRepository.save(customer);
         }
 
         orderRepository.deleteById(id);
@@ -318,32 +296,6 @@ public class OrderService {
                 .collect(Collectors.toList());
     }
 
-    // Additional service methods for better customer-order management
-    public List<OrderDTO> getOrdersByCustomerNumber(String customerNumber) {
-        Customer customer = customerRepository.findByCustomerNumber(customerNumber)
-                .orElseThrow(() -> new ResourceNotFoundException("Customer not found with number: " + customerNumber));
-        return customer.getOrders().stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
-
-    public List<OrderDTO> getOrdersBySalesManager(Long salesManagerId) {
-        return orderRepository.findBySalesManagerId(salesManagerId).stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
-
-    public long getOrderCountByStatus(OrderStatus status) {
-        return orderRepository.countByStatus(status);
-    }
-
-    public List<OrderDTO> getRecentOrders() {
-        return orderRepository.findTop10ByOrderByOrderDateDesc()
-                .stream()
-                .map(this::convertToDTO)
-                .toList();
-    }
-
     private String generateOrderNumber() {
         return "ORD-" + System.currentTimeMillis();
     }
@@ -358,22 +310,6 @@ public class OrderService {
         }
 
         return null;
-    }
-
-    private void validateStatusTransition(OrderStatus currentStatus, OrderStatus newStatus) {
-        // Define valid status transitions
-        Map<OrderStatus, Set<OrderStatus>> validTransitions = Map.of(
-                OrderStatus.PENDING, Set.of(OrderStatus.CONFIRMED, OrderStatus.CANCELLED),
-                OrderStatus.CONFIRMED, Set.of(OrderStatus.SHIPPED, OrderStatus.CANCELLED),
-                OrderStatus.SHIPPED, Set.of(OrderStatus.DELIVERED),
-                OrderStatus.DELIVERED, Set.of(), // Final state
-                OrderStatus.CANCELLED, Set.of()  // Final state
-        );
-
-        if (!validTransitions.get(currentStatus).contains(newStatus)) {
-            throw new InvalidOperationException(
-                    String.format("Invalid status transition from %s to %s", currentStatus, newStatus));
-        }
     }
 
     private void reserveStock(Order order) {
@@ -409,7 +345,7 @@ public class OrderService {
 
         if (order.getCustomer() != null) {
             dto.setCustomerId(order.getCustomer().getId());
-            dto.setCustomerName(order.getCustomer().getFullName());
+            dto.setCustomerName(order.getCustomer().getFirstName() + " " + order.getCustomer().getLastName());
         }
 
         if (order.getSalesManager() != null) {
