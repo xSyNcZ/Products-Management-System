@@ -5,102 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Order Management - PMS</title>
     <link rel="stylesheet" href="styles.css">
-    <style>
-        .order-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .order-filters {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        .order-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        .order-table th,
-        .order-table td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-        }
-
-        .order-table th {
-            background: #f8f9fa;
-            font-weight: 600;
-        }
-
-        .status-badge {
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 500;
-        }
-
-        .status-pending { background: #fff3cd; color: #856404; }
-        .status-processing { background: #d1ecf1; color: #0c5460; }
-        .status-shipped { background: #d4edda; color: #155724; }
-        .status-delivered { background: #d4edda; color: #155724; }
-        .status-cancelled { background: #f8d7da; color: #721c24; }
-
-        .order-actions {
-            display: flex;
-            gap: 5px;
-        }
-
-        .order-modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-        }
-
-        .modal-content {
-            background: white;
-            margin: 5% auto;
-            padding: 20px;
-            border-radius: 8px;
-            width: 80%;
-            max-width: 800px;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-
-        .order-items-table {
-            width: 100%;
-            margin-top: 20px;
-            border-collapse: collapse;
-        }
-
-        .order-items-table th,
-        .order-items-table td {
-            padding: 8px;
-            border: 1px solid #ddd;
-            text-align: left;
-        }
-
-        .order-summary {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 5px;
-            margin-top: 15px;
-        }
-    </style>
 </head>
 <body>
 <div class="container">
@@ -183,6 +87,27 @@
                     <option value="">Select Customer</option>
                     <!-- Customers will be loaded here -->
                 </select>
+            </div>
+
+            <!-- Address Selection Section -->
+            <div class="address-selection-section" id="addressSelectionSection" style="display: none;">
+                <h3>Address Information</h3>
+
+                <div class="form-group">
+                    <label for="shippingAddressId">Shipping Address:</label>
+                    <select id="shippingAddressId" required>
+                        <option value="">Select Shipping Address</option>
+                        <!-- Shipping addresses will be loaded here -->
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="billingAddressId">Billing Address:</label>
+                    <select id="billingAddressId" required>
+                        <option value="">Select Billing Address</option>
+                        <!-- Billing addresses will be loaded here -->
+                    </select>
+                </div>
             </div>
 
             <div class="form-group">

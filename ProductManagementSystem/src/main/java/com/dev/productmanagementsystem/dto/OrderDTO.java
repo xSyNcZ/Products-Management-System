@@ -1,6 +1,10 @@
 package com.dev.productmanagementsystem.dto;
 
 import com.dev.productmanagementsystem.enums.OrderStatus;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -8,7 +12,10 @@ import java.util.List;
 public class OrderDTO {
     private Long id;
     private String orderNumber;
+
+    @NotNull(message = "Customer ID is required")
     private Long customerId;
+
     private String customerName;
     private Long salesManagerId;
     private String salesManagerName;
@@ -16,9 +23,17 @@ public class OrderDTO {
     private LocalDateTime orderDate;
     private LocalDateTime shippingDate;
     private LocalDateTime deliveryDate;
+
+    @NotEmpty(message = "Order must contain at least one item")
+    @Valid
     private List<OrderItemDTO> items;
+
+    @NotNull(message = "Shipping address ID is required")
     private Long shippingAddressId;
+
+    @NotNull(message = "Billing address ID is required")
     private Long billingAddressId;
+
     private BigDecimal totalAmount;
 
     // Constructors

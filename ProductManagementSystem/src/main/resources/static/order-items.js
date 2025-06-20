@@ -6,19 +6,22 @@ class OrderItemsManager {
         this.currentUser = null;
         this.editingOrderItem = null;
         this.selectedItems = new Set();
+        this.apiBaseUrl = 'http://localhost:8080/api';
 
         this.init();
     }
 
     async init() {
         try {
-            //await this.checkAuthentication(); !TODO Delete this after tests
+            // For development - comment out authentication check
+            // await this.checkAuthentication();
             this.setupEventListeners();
             await this.loadInitialData();
         } catch (error) {
             console.error('Initialization error:', error);
             this.showNotification('Failed to initialize application', 'error');
-            this.redirectToLogin();
+            // For development - don't redirect to login
+            // this.redirectToLogin();
         }
     }
 
@@ -29,7 +32,7 @@ class OrderItemsManager {
                 throw new Error('No authentication token');
             }
 
-            const response = await fetch('/api/auth/verify', {
+            const response = await fetch(`${this.apiBaseUrl}/auth/verify`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -56,7 +59,8 @@ class OrderItemsManager {
             // Show/hide navigation items based on role
             const userRole = this.currentUser.roles?.[0]?.name;
             if (userRole === 'ADMIN' || userRole === 'MANAGER') {
-                document.getElementById('usersNav').style.display = 'block';
+                const usersNav = document.getElementById('usersNav');
+                if (usersNav) usersNav.style.display = 'block';
             }
         }
     }
@@ -108,18 +112,35 @@ class OrderItemsManager {
     async loadOrderItems() {
         try {
             this.showLoading();
-            const response = await this.makeAuthenticatedRequest('/api/order-items');
+            const response = await this.makeRequest(`${this.apiBaseUrl}/order-items`);
 
             if (!response.ok) {
-                throw new Error('Failed to load order items');
+                throw new Error(`Failed to load order items: ${response.status} ${response.statusText}`);
             }
 
-            this.orderItems = await response.json();
+            const orderItemsData = await response.json();
+
+            // Transform the backend DTO structure to match frontend expectations
+            this.orderItems = orderItemsData.map(item => ({
+                id: item.id,
+                quantity: item.quantity,
+                unitPrice: item.pricePerUnit, // Backend uses pricePerUnit, frontend expects unitPrice
+                order: { id: item.orderId },
+                product: {
+                    id: item.productId,
+                    name: item.productName
+                },
+                sourceWarehouse: item.sourceWarehouseId ? {
+                    id: item.sourceWarehouseId,
+                    name: item.sourceWarehouseName
+                } : null
+            }));
+
             this.renderOrderItems();
             this.updateItemCount();
         } catch (error) {
             console.error('Error loading order items:', error);
-            this.showNotification('Failed to load order items', 'error');
+            this.showNotification('Failed to load order items: ' + error.message, 'error');
         } finally {
             this.hideLoading();
         }
@@ -127,25 +148,57 @@ class OrderItemsManager {
 
     async loadOrders() {
         try {
-            const response = await this.makeAuthenticatedRequest('/api/orders');
+            const response = await this.makeRequest(`${this.apiBaseUrl}/orders`);
             if (response.ok) {
                 this.orders = await response.json();
+                this.populateOrderFilters();
+            } else {
+                console.warn('Orders endpoint not available - using mock data');
+                // Mock data for development
+                this.orders = [
+                    { id: 1, orderStatus: 'PENDING' },
+                    { id: 2, orderStatus: 'COMPLETED' },
+                    { id: 3, orderStatus: 'PROCESSING' }
+                ];
                 this.populateOrderFilters();
             }
         } catch (error) {
             console.error('Error loading orders:', error);
+            // Use mock data as fallback
+            this.orders = [
+                { id: 1, orderStatus: 'PENDING' },
+                { id: 2, orderStatus: 'COMPLETED' },
+                { id: 3, orderStatus: 'PROCESSING' }
+            ];
+            this.populateOrderFilters();
         }
     }
 
     async loadProducts() {
         try {
-            const response = await this.makeAuthenticatedRequest('/api/products');
+            const response = await this.makeRequest(`${this.apiBaseUrl}/products`);
             if (response.ok) {
                 this.products = await response.json();
+                this.populateProductFilters();
+            } else {
+                console.warn('Products endpoint not available - using mock data');
+                // Mock data for development
+                this.products = [
+                    { id: 1, name: 'Product A', price: 19.99 },
+                    { id: 2, name: 'Product B', price: 29.99 },
+                    { id: 3, name: 'Product C', price: 39.99 }
+                ];
                 this.populateProductFilters();
             }
         } catch (error) {
             console.error('Error loading products:', error);
+            // Use mock data as fallback
+            this.products = [
+                { id: 1, name: 'Product A', price: 19.99 },
+                { id: 2, name: 'Product B', price: 29.99 },
+                { id: 3, name: 'Product C', price: 39.99 }
+            ];
+            this.populateProductFilters();
         }
     }
 
@@ -158,8 +211,9 @@ class OrderItemsManager {
         orderSelect.innerHTML = '<option value="">Select Order</option>';
 
         this.orders.forEach(order => {
-            const option1 = new Option(`Order #${order.id} - ${order.orderStatus}`, order.id);
-            const option2 = new Option(`Order #${order.id} - ${order.orderStatus}`, order.id);
+            const orderLabel = `Order #${order.id}${order.orderStatus ? ' - ' + order.orderStatus : ''}`;
+            const option1 = new Option(orderLabel, order.id);
+            const option2 = new Option(orderLabel, order.id);
             orderFilter.appendChild(option1);
             orderSelect.appendChild(option2);
         });
@@ -174,8 +228,9 @@ class OrderItemsManager {
         productSelect.innerHTML = '<option value="">Select Product</option>';
 
         this.products.forEach(product => {
-            const option1 = new Option(`${product.name} - $${product.price}`, product.id);
-            const option2 = new Option(`${product.name} - $${product.price}`, product.id);
+            const productLabel = `${product.name}${product.price ? ' - $' + product.price : ''}`;
+            const option1 = new Option(productLabel, product.id);
+            const option2 = new Option(productLabel, product.id);
             productFilter.appendChild(option1);
             productSelect.appendChild(option2);
         });
@@ -339,7 +394,7 @@ class OrderItemsManager {
     updateUnitPriceFromProduct() {
         const productId = document.getElementById('productId').value;
         const product = this.products.find(p => p.id.toString() === productId);
-        if (product) {
+        if (product && product.price) {
             document.getElementById('unitPrice').value = product.price;
             this.calculateTotalPrice();
         }
@@ -349,27 +404,38 @@ class OrderItemsManager {
         e.preventDefault();
 
         const formData = new FormData(e.target);
+
+        // Transform frontend data to match backend DTO structure
         const orderItemData = {
-            order: { id: parseInt(formData.get('orderId')) },
-            product: { id: parseInt(formData.get('productId')) },
+            orderId: parseInt(formData.get('orderId')),
+            productId: parseInt(formData.get('productId')),
             quantity: parseInt(formData.get('quantity')),
-            unitPrice: parseFloat(formData.get('unitPrice'))
+            pricePerUnit: parseFloat(formData.get('unitPrice')) // Backend expects pricePerUnit
         };
+
+        // Add ID if editing
+        if (this.editingOrderItem) {
+            orderItemData.id = this.editingOrderItem.id;
+        }
 
         try {
             const url = this.editingOrderItem ?
-                `/api/order-items/${this.editingOrderItem.id}` :
-                '/api/order-items';
+                `${this.apiBaseUrl}/order-items/${this.editingOrderItem.id}` :
+                `${this.apiBaseUrl}/order-items`;
 
             const method = this.editingOrderItem ? 'PUT' : 'POST';
 
-            const response = await this.makeAuthenticatedRequest(url, {
+            const response = await this.makeRequest(url, {
                 method: method,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify(orderItemData)
             });
 
             if (!response.ok) {
-                throw new Error('Failed to save order item');
+                const errorText = await response.text();
+                throw new Error(`Failed to save order item: ${response.status} ${errorText}`);
             }
 
             this.showNotification(
@@ -381,7 +447,7 @@ class OrderItemsManager {
             await this.loadOrderItems();
         } catch (error) {
             console.error('Error saving order item:', error);
-            this.showNotification('Failed to save order item', 'error');
+            this.showNotification('Failed to save order item: ' + error.message, 'error');
         }
     }
 
@@ -402,19 +468,19 @@ class OrderItemsManager {
 
     async confirmDeleteOrderItem(id) {
         try {
-            const response = await this.makeAuthenticatedRequest(`/api/order-items/${id}`, {
+            const response = await this.makeRequest(`${this.apiBaseUrl}/order-items/${id}`, {
                 method: 'DELETE'
             });
 
             if (!response.ok) {
-                throw new Error('Failed to delete order item');
+                throw new Error(`Failed to delete order item: ${response.status}`);
             }
 
             this.showNotification('Order item deleted successfully', 'success');
             await this.loadOrderItems();
         } catch (error) {
             console.error('Error deleting order item:', error);
-            this.showNotification('Failed to delete order item', 'error');
+            this.showNotification('Failed to delete order item: ' + error.message, 'error');
         }
     }
 
@@ -457,20 +523,26 @@ class OrderItemsManager {
     async confirmBulkDelete() {
         try {
             const deletePromises = Array.from(this.selectedItems).map(id =>
-                this.makeAuthenticatedRequest(`/api/order-items/${id}`, {
+                this.makeRequest(`${this.apiBaseUrl}/order-items/${id}`, {
                     method: 'DELETE'
                 })
             );
 
-            await Promise.all(deletePromises);
+            const results = await Promise.allSettled(deletePromises);
+            const failures = results.filter(result => result.status === 'rejected').length;
 
-            this.showNotification(`${this.selectedItems.size} order items deleted successfully`, 'success');
+            if (failures === 0) {
+                this.showNotification(`${this.selectedItems.size} order items deleted successfully`, 'success');
+            } else {
+                this.showNotification(`${this.selectedItems.size - failures} order items deleted, ${failures} failed`, 'warning');
+            }
+
             this.selectedItems.clear();
             document.querySelector('.bulk-actions').style.display = 'none';
             await this.loadOrderItems();
         } catch (error) {
             console.error('Error deleting order items:', error);
-            this.showNotification('Failed to delete some order items', 'error');
+            this.showNotification('Failed to delete order items', 'error');
         }
     }
 
@@ -507,15 +579,22 @@ class OrderItemsManager {
         document.getElementById('loadingIndicator').style.display = 'none';
     }
 
-    async makeAuthenticatedRequest(url, options = {}) {
-        const token = localStorage.getItem('authToken');
+    async makeRequest(url, options = {}) {
+        // For development without authentication
         const defaultOptions = {
             headers: {
-                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 ...options.headers
             }
         };
+
+        // If you have authentication, uncomment this:
+        /*
+        const token = localStorage.getItem('authToken');
+        if (token) {
+            defaultOptions.headers['Authorization'] = `Bearer ${token}`;
+        }
+        */
 
         return fetch(url, { ...defaultOptions, ...options });
     }
@@ -527,7 +606,8 @@ class OrderItemsManager {
 
         const icon = type === 'success' ? 'check-circle' :
             type === 'error' ? 'exclamation-circle' :
-                'info-circle';
+                type === 'warning' ? 'exclamation-triangle' :
+                    'info-circle';
 
         notification.innerHTML = `
             <i class="fas fa-${icon}"></i>

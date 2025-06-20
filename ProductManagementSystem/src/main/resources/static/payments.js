@@ -1,9 +1,11 @@
 // Payment Management JavaScript
 class PaymentManager {
     constructor() {
-        this.apiUrl = '/api/payments';
+        this.apiUrl = 'http://localhost:8080/api/payments';
+        this.invoiceApiUrl = 'http://localhost:8080/api/invoices';
         this.currentPayment = null;
         this.userRole = this.getUserRole();
+        this.invoices = [];
         this.init();
     }
 
@@ -12,9 +14,10 @@ class PaymentManager {
         return user.roles?.[0]?.name || 'USER';
     }
 
-    init() {
+    async init() {
         this.bindEvents();
-        this.loadPayments();
+        await this.loadInvoices();
+        await this.loadPayments();
         this.checkPermissions();
     }
 
@@ -64,10 +67,31 @@ class PaymentManager {
             this.savePayment();
         });
 
-        // Logout
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            this.logout();
-        });
+        // Logout (only if logout button exists)
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+                this.logout();
+            });
+        }
+    }
+
+    async loadInvoices() {
+        try {
+            const response = await fetch(this.invoiceApiUrl, {
+                headers: this.getAuthHeaders()
+            });
+
+            if (response.ok) {
+                this.invoices = await response.json();
+            } else {
+                console.warn('Could not load invoices - may not be available');
+                this.invoices = [];
+            }
+        } catch (error) {
+            console.warn('Invoices endpoint not available:', error);
+            this.invoices = [];
+        }
     }
 
     async loadPayments() {
@@ -76,14 +100,16 @@ class PaymentManager {
                 headers: this.getAuthHeaders()
             });
 
-            if (!response.ok) throw new Error('Failed to load payments');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
 
             const payments = await response.json();
             this.payments = payments;
             this.displayPayments(payments);
         } catch (error) {
             console.error('Error loading payments:', error);
-            this.showError('Failed to load payments');
+            this.showError('Failed to load payments: ' + error.message);
         }
     }
 
@@ -91,19 +117,24 @@ class PaymentManager {
         const tbody = document.getElementById('paymentsTableBody');
         tbody.innerHTML = '';
 
+        if (!payments || payments.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No payments found</td></tr>';
+            return;
+        }
+
         payments.forEach(payment => {
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>${payment.id}</td>
+                <td>${payment.id || 'N/A'}</td>
                 <td>${this.formatDateTime(payment.paymentDate)}</td>
                 <td>$${payment.amount?.toFixed(2) || '0.00'}</td>
-                <td>${this.formatPaymentMethod(payment.paymentMethod)}</td>
+                <td>${this.formatPaymentMethod(payment.method)}</td>
                 <td>
-                    <span class="status-badge ${payment.paymentStatus?.toLowerCase() || 'pending'}">
+                    <span class="status-badge ${(payment.paymentStatus || 'pending').toLowerCase()}">
                         ${payment.paymentStatus || 'PENDING'}
                     </span>
                 </td>
-                <td>${payment.invoice?.id || 'N/A'}</td>
+                <td>${payment.invoiceId || 'N/A'}</td>
                 <td>
                     ${this.userRole === 'ADMIN' ? `
                         <button class="btn btn-sm btn-primary" onclick="paymentManager.editPayment(${payment.id})">
@@ -131,7 +162,7 @@ class PaymentManager {
             'BANK_TRANSFER': 'Bank Transfer',
             'CASH': 'Cash'
         };
-        return methods[method] || method;
+        return methods[method] || method || 'Unknown';
     }
 
     async openPaymentModal(payment = null) {
@@ -143,10 +174,18 @@ class PaymentManager {
         title.textContent = payment ? 'Edit Payment' : 'Record Payment';
         form.reset();
 
+        // Add invoice selection if invoices are available
+        this.setupInvoiceSelection();
+
         if (payment) {
             document.getElementById('amount').value = payment.amount || '';
-            document.getElementById('paymentMethod').value = payment.paymentMethod || '';
+            document.getElementById('paymentMethod').value = payment.method || '';
             document.getElementById('paymentStatus').value = payment.paymentStatus || '';
+
+            const invoiceSelect = document.getElementById('invoiceId');
+            if (invoiceSelect && payment.invoiceId) {
+                invoiceSelect.value = payment.invoiceId;
+            }
         } else {
             document.getElementById('paymentStatus').value = 'PAID';
         }
@@ -154,13 +193,49 @@ class PaymentManager {
         modal.style.display = 'block';
     }
 
+    setupInvoiceSelection() {
+        // Check if invoice selection already exists
+        let invoiceGroup = document.querySelector('.invoice-form-group');
+
+        if (!invoiceGroup && this.invoices.length > 0) {
+            // Create invoice selection dropdown
+            invoiceGroup = document.createElement('div');
+            invoiceGroup.className = 'form-group invoice-form-group';
+
+            invoiceGroup.innerHTML = `
+                <label for="invoiceId">Invoice (Optional):</label>
+                <select id="invoiceId" name="invoiceId">
+                    <option value="">Select Invoice</option>
+                    ${this.invoices.map(invoice =>
+                `<option value="${invoice.id}">Invoice #${invoice.id} - $${invoice.totalAmount || 0}</option>`
+            ).join('')}
+                </select>
+            `;
+
+            // Insert after amount field
+            const amountGroup = document.querySelector('#paymentForm .form-group');
+            amountGroup.parentNode.insertBefore(invoiceGroup, amountGroup.nextSibling);
+        }
+    }
+
     async savePayment() {
         const formData = new FormData(document.getElementById('paymentForm'));
+
+        // Build payment data according to API DTO structure
         const paymentData = {
             amount: parseFloat(formData.get('amount')),
-            paymentMethod: formData.get('paymentMethod'),
-            paymentStatus: formData.get('paymentStatus')
+            method: formData.get('paymentMethod'), // Note: API expects 'method', not 'paymentMethod'
+            paymentStatus: formData.get('paymentStatus'),
+            paymentDate: new Date().toISOString(), // Set current date/time
+            transactionId: this.generateTransactionId(), // Generate a transaction ID
+            notes: `Payment recorded via web interface`
         };
+
+        // Add invoice ID if selected
+        const invoiceId = formData.get('invoiceId');
+        if (invoiceId) {
+            paymentData.invoiceId = parseInt(invoiceId);
+        }
 
         try {
             const url = this.currentPayment ?
@@ -171,22 +246,26 @@ class PaymentManager {
 
             const response = await fetch(url, {
                 method: method,
-                headers: {
-                    ...this.getAuthHeaders(),
-                    'Content-Type': 'application/json'
-                },
+                headers: this.getAuthHeaders(),
                 body: JSON.stringify(paymentData)
             });
 
-            if (!response.ok) throw new Error('Failed to save payment');
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+            }
 
             this.closeModal('paymentModal');
-            this.loadPayments();
+            await this.loadPayments();
             this.showSuccess(this.currentPayment ? 'Payment updated successfully' : 'Payment recorded successfully');
         } catch (error) {
             console.error('Error saving payment:', error);
-            this.showError('Failed to save payment');
+            this.showError('Failed to save payment: ' + error.message);
         }
+    }
+
+    generateTransactionId() {
+        return 'TXN-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5);
     }
 
     async editPayment(id) {
@@ -195,11 +274,15 @@ class PaymentManager {
                 headers: this.getAuthHeaders()
             });
 
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
             const payment = await response.json();
             this.openPaymentModal(payment);
         } catch (error) {
             console.error('Error loading payment:', error);
-            this.showError('Failed to load payment details');
+            this.showError('Failed to load payment details: ' + error.message);
         }
     }
 
@@ -209,22 +292,29 @@ class PaymentManager {
                 headers: this.getAuthHeaders()
             });
 
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
             const payment = await response.json();
             this.showPaymentDetails(payment);
         } catch (error) {
             console.error('Error loading payment:', error);
-            this.showError('Failed to load payment details');
+            this.showError('Failed to load payment details: ' + error.message);
         }
     }
 
     showPaymentDetails(payment) {
         const details = `
-            Payment ID: ${payment.id}
-            Date: ${this.formatDateTime(payment.paymentDate)}
-            Amount: $${payment.amount?.toFixed(2)}
-            Method: ${this.formatPaymentMethod(payment.paymentMethod)}
-            Status: ${payment.paymentStatus}
-            ${payment.invoice ? `Invoice ID: ${payment.invoice.id}` : 'No associated invoice'}
+Payment Details:
+- ID: ${payment.id}
+- Date: ${this.formatDateTime(payment.paymentDate)}
+- Amount: $${payment.amount?.toFixed(2)}
+- Method: ${this.formatPaymentMethod(payment.method)}
+- Status: ${payment.paymentStatus}
+- Transaction ID: ${payment.transactionId || 'N/A'}
+- Invoice ID: ${payment.invoiceId || 'N/A'}
+- Notes: ${payment.notes || 'No notes'}
         `;
         alert(details);
     }
@@ -240,18 +330,19 @@ class PaymentManager {
                 headers: this.getAuthHeaders()
             });
 
-            if (!response.ok) throw new Error('Failed to delete payment');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
 
-            this.loadPayments();
+            await this.loadPayments();
             this.showSuccess('Payment deleted successfully');
         } catch (error) {
             console.error('Error deleting payment:', error);
-            this.showError('Failed to delete payment');
+            this.showError('Failed to delete payment: ' + error.message);
         }
     }
 
     searchPayments() {
-        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
         this.filterAndDisplayPayments();
     }
 
@@ -260,6 +351,8 @@ class PaymentManager {
     }
 
     filterAndDisplayPayments() {
+        if (!this.payments) return;
+
         const searchTerm = document.getElementById('searchInput').value.toLowerCase();
         const statusFilter = document.getElementById('statusFilter').value;
 
@@ -268,9 +361,10 @@ class PaymentManager {
         // Apply search filter
         if (searchTerm) {
             filteredPayments = filteredPayments.filter(payment => {
-                return payment.id.toString().includes(searchTerm) ||
-                    payment.paymentMethod?.toLowerCase().includes(searchTerm) ||
-                    payment.amount?.toString().includes(searchTerm);
+                return payment.id?.toString().includes(searchTerm) ||
+                    payment.method?.toLowerCase().includes(searchTerm) ||
+                    payment.amount?.toString().includes(searchTerm) ||
+                    payment.transactionId?.toLowerCase().includes(searchTerm);
             });
         }
 
@@ -290,23 +384,36 @@ class PaymentManager {
 
     formatDateTime(dateString) {
         if (!dateString) return 'N/A';
-        return new Date(dateString).toLocaleString();
+        try {
+            return new Date(dateString).toLocaleString();
+        } catch (error) {
+            return 'Invalid Date';
+        }
     }
 
     getAuthHeaders() {
         const token = localStorage.getItem('authToken');
-        return {
-            'Authorization': `Bearer ${token}`,
+        const headers = {
             'Content-Type': 'application/json'
         };
+
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        return headers;
     }
 
     showSuccess(message) {
-        alert(message);
+        // You can replace this with a better notification system
+        alert('✅ ' + message);
+        console.log('Success:', message);
     }
 
     showError(message) {
-        alert(message);
+        // You can replace this with a better notification system
+        alert('❌ ' + message);
+        console.error('Error:', message);
     }
 
     logout() {

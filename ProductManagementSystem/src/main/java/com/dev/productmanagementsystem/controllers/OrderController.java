@@ -13,12 +13,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -125,25 +130,44 @@ public class OrderController {
     }
 
     @PostMapping
-    public ResponseEntity<OrderDTO> createOrder(@Valid @RequestBody OrderDTO orderDTO) {
+    public ResponseEntity<?> createOrder(@Valid @RequestBody OrderDTO orderDTO, BindingResult bindingResult) {
         log.info("Creating new order for customer ID: {}", orderDTO.getCustomerId());
+
+        // Check for validation errors
+        if (bindingResult.hasErrors()) {
+            Map<String, String> errors = new HashMap<>();
+            bindingResult.getFieldErrors().forEach(error -> {
+                errors.put(error.getField(), error.getDefaultMessage());
+            });
+            log.error("Validation errors in order creation: {}", errors);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
+        }
+
         try {
             OrderDTO createdOrder = orderService.createOrder(orderDTO);
+            log.info("Order created successfully with ID: {}", createdOrder.getId());
             return new ResponseEntity<>(createdOrder, HttpStatus.CREATED);
+        } catch (IllegalArgumentException e) {
+            log.error("Failed to create order: Invalid input - {}", e.getMessage());
+            Map<String, String> error = Map.of("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         } catch (ResourceNotFoundException e) {
             log.error("Failed to create order: Resource not found - {}", e.getMessage());
-            return ResponseEntity.notFound().build();
+            Map<String, String> error = Map.of("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
         } catch (InsufficientStockException e) {
             log.error("Failed to create order: Insufficient stock - {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+            Map<String, String> error = Map.of("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
         } catch (Exception e) {
             log.error("Failed to create order", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            Map<String, String> error = Map.of("error", "Internal server error occurred while creating order");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<OrderDTO> updateOrderStatus(
+    public ResponseEntity<?> updateOrderStatus(
             @PathVariable Long id,
             @RequestParam OrderStatus status) {
         log.info("Updating order {} status to {}", id, status);
@@ -152,44 +176,64 @@ public class OrderController {
             return ResponseEntity.ok(updatedOrder);
         } catch (ResourceNotFoundException e) {
             log.warn("Order not found with ID: {}", id);
-            return ResponseEntity.notFound().build();
+            Map<String, String> error = Map.of("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
         } catch (InsufficientStockException e) {
             log.error("Failed to update order: Insufficient stock - {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+            Map<String, String> error = Map.of("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
         } catch (InvalidOperationException e) {
             log.error("Failed to update order: Invalid operation - {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            Map<String, String> error = Map.of("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         } catch (Exception e) {
             log.error("Failed to update order", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            Map<String, String> error = Map.of("error", "Internal server error occurred while updating order");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
     @PostMapping("/{id}/items")
-    public ResponseEntity<OrderDTO> addOrderItem(
+    public ResponseEntity<?> addOrderItem(
             @PathVariable Long id,
-            @Valid @RequestBody OrderItemDTO itemDTO) {
+            @Valid @RequestBody OrderItemDTO itemDTO,
+            BindingResult bindingResult) {
         log.info("Adding item to order ID: {}", id);
+
+        // Check for validation errors
+        if (bindingResult.hasErrors()) {
+            Map<String, String> errors = new HashMap<>();
+            bindingResult.getFieldErrors().forEach(error -> {
+                errors.put(error.getField(), error.getDefaultMessage());
+            });
+            log.error("Validation errors in add order item: {}", errors);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
+        }
+
         try {
             OrderDTO updatedOrder = orderService.addOrderItem(id, itemDTO);
             return ResponseEntity.ok(updatedOrder);
         } catch (ResourceNotFoundException e) {
             log.warn("Order or product not found - {}", e.getMessage());
-            return ResponseEntity.notFound().build();
+            Map<String, String> error = Map.of("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
         } catch (InvalidOperationException e) {
             log.error("Failed to add item: Invalid operation - {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            Map<String, String> error = Map.of("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         } catch (InsufficientStockException e) {
             log.error("Failed to add item: Insufficient stock - {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+            Map<String, String> error = Map.of("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
         } catch (Exception e) {
             log.error("Failed to add item to order", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            Map<String, String> error = Map.of("error", "Internal server error occurred while adding item");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
     @DeleteMapping("/{orderId}/items/{itemId}")
-    public ResponseEntity<OrderDTO> removeOrderItem(
+    public ResponseEntity<?> removeOrderItem(
             @PathVariable Long orderId,
             @PathVariable Long itemId) {
         log.info("Removing item {} from order {}", itemId, orderId);
@@ -198,49 +242,69 @@ public class OrderController {
             return ResponseEntity.ok(updatedOrder);
         } catch (ResourceNotFoundException e) {
             log.warn("Order or item not found - {}", e.getMessage());
-            return ResponseEntity.notFound().build();
+            Map<String, String> error = Map.of("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
         } catch (InvalidOperationException e) {
             log.error("Failed to remove item: Invalid operation - {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            Map<String, String> error = Map.of("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         } catch (Exception e) {
             log.error("Failed to remove item from order", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            Map<String, String> error = Map.of("error", "Internal server error occurred while removing item");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
     @PostMapping("/{id}/cancel")
-    public ResponseEntity<OrderDTO> cancelOrder(@PathVariable Long id) {
+    public ResponseEntity<?> cancelOrder(@PathVariable Long id) {
         log.info("Cancelling order ID: {}", id);
         try {
             OrderDTO cancelledOrder = orderService.cancelOrder(id);
             return ResponseEntity.ok(cancelledOrder);
         } catch (ResourceNotFoundException e) {
             log.warn("Order not found with ID: {}", id);
-            return ResponseEntity.notFound().build();
+            Map<String, String> error = Map.of("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
         } catch (InvalidOperationException e) {
             log.error("Failed to cancel order: Invalid operation - {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            Map<String, String> error = Map.of("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         } catch (Exception e) {
             log.error("Failed to cancel order", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            Map<String, String> error = Map.of("error", "Internal server error occurred while cancelling order");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteOrder(@PathVariable Long id) {
+    public ResponseEntity<?> deleteOrder(@PathVariable Long id) {
         log.info("Deleting order ID: {}", id);
         try {
             orderService.deleteOrder(id);
             return ResponseEntity.noContent().build();
         } catch (ResourceNotFoundException e) {
             log.warn("Order not found with ID: {}", id);
-            return ResponseEntity.notFound().build();
+            Map<String, String> error = Map.of("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
         } catch (IllegalStateException e) {
             log.error("Failed to delete order: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            Map<String, String> error = Map.of("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         } catch (Exception e) {
             log.error("Failed to delete order", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            Map<String, String> error = Map.of("error", "Internal server error occurred while deleting order");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
+    }
+
+    // Global exception handler for validation errors
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getFieldErrors().forEach(error -> {
+            errors.put(error.getField(), error.getDefaultMessage());
+        });
+        log.error("Validation errors: {}", errors);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
     }
 }

@@ -76,5 +76,20 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
         </plugins>
+
+        <resources>
+            <!-- Default resources -->
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+
+            <!-- Include frontend files from src/main/java -->
+            <resource>
+                <directory>src/main/java</directory>
+                <includes>
+                    <include>com/dev/productmanagementsystem/frontend/**</include>
+                </includes>
+            </resource>
+        </resources>
     </build>
 </project>
