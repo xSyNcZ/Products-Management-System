@@ -37,7 +37,6 @@ AFTER 7.05.2025.
 - and connect actual api
 (left to do:, permissions, roles, users)
 (fix order creation - problems with billingAdressId, ShippingAddressId, modify controller)
-(!SEPARATE USERS FROM CUSTOMERS)
 - modify the recent activity in index.html so it actually sees recent activity
 - test if it works
 
