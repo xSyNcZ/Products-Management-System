@@ -15,8 +15,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.CrossOrigin;
+
 @RestController
 @RequestMapping("/api/warehouses")
+@CrossOrigin(origins = "*")
 public class WarehouseController {
 
     private final WarehouseService warehouseService;
@@ -92,13 +96,14 @@ public class WarehouseController {
         return ResponseEntity.ok(products);
     }
 
-    @PostMapping
+    @PostMapping(consumes = {MediaType.APPLICATION_JSON_VALUE, "application/json;charset=UTF-8"})
     public ResponseEntity<WarehouseDTO> createWarehouse(@RequestBody Warehouse warehouse) {
         Warehouse createdWarehouse = warehouseService.save(warehouse);
         return new ResponseEntity<>(convertToDTO(createdWarehouse), HttpStatus.CREATED);
     }
 
-    @PutMapping("/{id}")
+
+    @PutMapping(value = "/{id}", consumes = {MediaType.APPLICATION_JSON_VALUE, "application/json;charset=UTF-8"})
     public ResponseEntity<WarehouseDTO> updateWarehouse(
             @PathVariable Long id,
             @RequestBody Warehouse warehouse) {

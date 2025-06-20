@@ -36,6 +36,7 @@ AFTER 7.05.2025.
 - delete proxies and mockups (or rather comment them)
 - and connect actual api
 (left to do:, permissions, roles, users)
+(fix add warehouse function)
 (fix order creation - problems with billingAdressId, ShippingAddressId, modify controller)
 - modify the recent activity in index.html so it actually sees recent activity
 - test if it works

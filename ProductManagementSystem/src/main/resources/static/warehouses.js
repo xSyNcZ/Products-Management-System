@@ -244,6 +244,7 @@ class WarehouseManager {
         modal.style.display = 'block';
     }
 
+    // Updated saveWarehouse method to fix Content-Type issue
     async saveWarehouse() {
         const form = document.getElementById('warehouseForm');
         if (!form) {
@@ -266,69 +267,86 @@ class WarehouseManager {
             return;
         }
 
-        // Create warehouse object matching Spring Boot entity structure
         const warehouseData = {
             name,
             location,
-            address: location, // Use location as address if no separate address field
-            capacity: null // Set default or add capacity field to form
+            address: location,
+            capacity: null
         };
 
-        try {
+        // Use XMLHttpRequest to have precise control over headers
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
             const url = this.currentWarehouse ?
                 `${this.apiUrl}/${this.currentWarehouse.id}` :
                 this.apiUrl;
-
             const method = this.currentWarehouse ? 'PUT' : 'POST';
 
-            console.log('Saving warehouse:', warehouseData, 'to:', url);
+            xhr.open(method, url);
 
-            const response = await fetch(url, {
-                method: method,
-                headers: {
-                    ...this.getAuthHeaders(),
-                    'Content-Type': 'application/json'
-                },
-                mode: 'cors',
-                body: JSON.stringify(warehouseData)
-            });
-
-            console.log('Save response status:', response.status);
-
-            if (response.status === 401) {
-                this.handleUnauthorized();
-                return;
+            // Set headers manually to avoid automatic charset addition
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                xhr.setRequestHeader('Authorization', `Bearer ${token}`);
             }
+            // Set Content-Type without charset
+            xhr.setRequestHeader('Content-Type', 'application/json');
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Error response:', errorText);
-
-                let errorMessage;
-                try {
-                    const errorData = JSON.parse(errorText);
-                    errorMessage = errorData.message || errorText;
-                } catch {
-                    errorMessage = errorText || `HTTP error! status: ${response.status}`;
+            xhr.onload = () => {
+                if (xhr.status === 401) {
+                    this.handleUnauthorized();
+                    reject(new Error('Unauthorized'));
+                    return;
                 }
-                throw new Error(errorMessage);
-            }
 
-            const savedWarehouse = await response.json();
-            console.log('Saved warehouse:', savedWarehouse);
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try {
+                        const savedWarehouse = JSON.parse(xhr.responseText);
+                        console.log('Saved warehouse:', savedWarehouse);
 
-            this.closeModal('warehouseModal');
-            await this.loadWarehouses();
-            this.showSuccess(this.currentWarehouse ? 'Warehouse updated successfully' : 'Warehouse created successfully');
-        } catch (error) {
-            console.error('Error saving warehouse:', error);
+                        this.closeModal('warehouseModal');
+                        this.loadWarehouses();
+                        this.showSuccess(this.currentWarehouse ? 'Warehouse updated successfully' : 'Warehouse created successfully');
+                        resolve(savedWarehouse);
+                    } catch (parseError) {
+                        console.error('Error parsing response:', parseError);
+                        this.showError('Invalid response from server');
+                        reject(parseError);
+                    }
+                } else {
+                    let errorMessage;
+                    try {
+                        const errorData = JSON.parse(xhr.responseText);
+                        errorMessage = errorData.message || xhr.responseText;
+                    } catch {
+                        errorMessage = xhr.responseText || `HTTP error! status: ${xhr.status}`;
+                    }
+                    console.error('Save error:', errorMessage);
+                    this.showError('Failed to save warehouse: ' + errorMessage);
+                    reject(new Error(errorMessage));
+                }
+            };
 
-            if (error.name === 'TypeError' && error.message.includes('fetch')) {
-                this.showError('Cannot connect to server. Please ensure the backend is running.');
-            } else {
-                this.showError('Failed to save warehouse: ' + error.message);
-            }
-        }
+            xhr.onerror = () => {
+                const errorMsg = 'Cannot connect to server. Please ensure the backend is running.';
+                console.error('Network error:', errorMsg);
+                this.showError(errorMsg);
+                reject(new Error('Network error'));
+            };
+
+            xhr.ontimeout = () => {
+                const errorMsg = 'Request timed out. Please try again.';
+                console.error('Timeout error:', errorMsg);
+                this.showError(errorMsg);
+                reject(new Error('Timeout error'));
+            };
+
+            // Set timeout (optional)
+            xhr.timeout = 10000; // 10 seconds
+
+            console.log('Sending request:', method, url, warehouseData);
+            xhr.send(JSON.stringify(warehouseData));
+        });
     }
 
     async editWarehouse(id) {
@@ -656,15 +674,101 @@ class WarehouseManager {
 
     getAuthHeaders() {
         const token = localStorage.getItem('authToken');
-        const headers = {
-            'Content-Type': 'application/json'
-        };
+        const headers = {};
 
         if (token) {
             headers['Authorization'] = `Bearer ${token}`;
         }
 
         return headers;
+    }
+
+// Also update the saveWarehouse method to set Content-Type separately
+    async saveWarehouse() {
+        const form = document.getElementById('warehouseForm');
+        if (!form) {
+            this.showError('Form not found');
+            return;
+        }
+
+        const formData = new FormData(form);
+        const name = formData.get('name')?.toString().trim();
+        const location = formData.get('location')?.toString().trim();
+
+        // Validation
+        if (!name) {
+            this.showError('Warehouse name is required');
+            return;
+        }
+
+        if (!location) {
+            this.showError('Location is required');
+            return;
+        }
+
+        // Create warehouse object matching Spring Boot entity structure
+        const warehouseData = {
+            name,
+            location,
+            address: location, // Use location as address if no separate address field
+            capacity: null // Set default or add capacity field to form
+        };
+
+        try {
+            const url = this.currentWarehouse ?
+                `${this.apiUrl}/${this.currentWarehouse.id}` :
+                this.apiUrl;
+
+            const method = this.currentWarehouse ? 'PUT' : 'POST';
+
+            console.log('Saving warehouse:', warehouseData, 'to:', url);
+
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    ...this.getAuthHeaders(),
+                    'Content-Type': 'application/json'  // Remove charset specification
+                },
+                mode: 'cors',
+                body: JSON.stringify(warehouseData)
+            });
+
+            console.log('Save response status:', response.status);
+
+            if (response.status === 401) {
+                this.handleUnauthorized();
+                return;
+            }
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Error response:', errorText);
+
+                let errorMessage;
+                try {
+                    const errorData = JSON.parse(errorText);
+                    errorMessage = errorData.message || errorText;
+                } catch {
+                    errorMessage = errorText || `HTTP error! status: ${response.status}`;
+                }
+                throw new Error(errorMessage);
+            }
+
+            const savedWarehouse = await response.json();
+            console.log('Saved warehouse:', savedWarehouse);
+
+            this.closeModal('warehouseModal');
+            await this.loadWarehouses();
+            this.showSuccess(this.currentWarehouse ? 'Warehouse updated successfully' : 'Warehouse created successfully');
+        } catch (error) {
+            console.error('Error saving warehouse:', error);
+
+            if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                this.showError('Cannot connect to server. Please ensure the backend is running.');
+            } else {
+                this.showError('Failed to save warehouse: ' + error.message);
+            }
+        }
     }
 
     handleUnauthorized() {
