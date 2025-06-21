@@ -146,17 +146,19 @@ async function renderCategoriesTable() {
             <td>${escapeHtml(category.name)}</td>
             <td>${escapeHtml(category.description || 'No description')}</td>
             <td>
-                <span class="badge">${category.productCount || 0}</span>
-                <button onclick="viewCategoryProducts(${category.id})" class="btn btn-sm btn-info" title="View Products">
-                    <i class="fas fa-eye"></i>
-                </button>
+                <div class="product-count-cell">
+                    <span class="badge">${category.productCount || 0}</span>
+                    <button onclick="viewCategoryProducts(${category.id})" class="btn btn-sm btn-info" title="View Products in this Category">
+                        <i class="fas fa-eye"></i> View Products
+                    </button>
+                </div>
             </td>
             <td class="actions">
-                <button onclick="editCategory(${category.id})" class="btn btn-sm btn-primary" title="Edit">
-                    <i class="fas fa-edit"></i>
+                <button onclick="editCategory(${category.id})" class="btn btn-sm btn-primary" title="Edit Category">
+                    <i class="fas fa-edit"></i> Edit
                 </button>
-                <button onclick="deleteCategory(${category.id})" class="btn btn-sm btn-danger" title="Delete">
-                    <i class="fas fa-trash"></i>
+                <button onclick="deleteCategory(${category.id})" class="btn btn-sm btn-danger" title="Delete Category">
+                    <i class="fas fa-trash"></i> Delete
                 </button>
             </td>
         </tr>
@@ -374,10 +376,10 @@ function renderCategoryProducts(products) {
             <td>${escapeHtml(product.description || 'No description')}</td>
             <td class="actions">
                 <button onclick="editProduct(${product.id})" class="btn btn-sm btn-primary" title="Edit Product">
-                    <i class="fas fa-edit"></i>
+                    <i class="fas fa-edit"></i> Edit Product
                 </button>
                 <button onclick="removeFromCategory(${product.id})" class="btn btn-sm btn-warning" title="Remove from Category">
-                    <i class="fas fa-unlink"></i>
+                    <i class="fas fa-unlink"></i> Remove
                 </button>
             </td>
         </tr>

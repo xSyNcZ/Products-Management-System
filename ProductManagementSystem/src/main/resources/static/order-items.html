@@ -46,7 +46,7 @@
                     <input type="text" id="searchInput" class="form-input" placeholder="Search order items...">
                 </div>
                 <button id="clearFilters" class="btn btn-secondary">
-                    <i class="fas fa-times"></i> Clear Filters
+                    <i class="fas fa-times"></i> Clear All Filters
                 </button>
             </div>
         </section>
@@ -55,14 +55,14 @@
         <section class="actions-section">
             <div class="actions-container">
                 <button id="addOrderItemBtn" class="btn btn-primary">
-                    <i class="fas fa-plus"></i> Add Order Item
+                    <i class="fas fa-plus"></i> Add New Order Item
                 </button>
                 <button id="refreshBtn" class="btn btn-secondary">
-                    <i class="fas fa-sync-alt"></i> Refresh
+                    <i class="fas fa-sync-alt"></i> Refresh Data
                 </button>
                 <div class="bulk-actions" style="display: none;">
                     <button id="bulkDeleteBtn" class="btn btn-danger">
-                        <i class="fas fa-trash"></i> Delete Selected
+                        <i class="fas fa-trash"></i> Delete Selected Items
                     </button>
                 </div>
             </div>
@@ -74,9 +74,11 @@
                 <div class="table-header">
                     <h3><i class="fas fa-list"></i> Order Items</h3>
                     <div class="table-controls">
-                        <label>
-                            <input type="checkbox" id="selectAll"> Select All
-                        </label>
+                        <div class="select-all-group">
+                            <label>
+                                <input type="checkbox" id="selectAll"> Select All Items
+                            </label>
+                        </div>
                         <span id="itemCount" class="item-count">0 items</span>
                     </div>
                 </div>
@@ -85,10 +87,14 @@
                     <table id="orderItemsTable" class="data-table">
                         <thead>
                         <tr>
-                            <th><input type="checkbox" id="selectAllHeader"></th>
-                            <th>ID</th>
+                            <th>
+                                <label>
+                                    <input type="checkbox" id="selectAllHeader"> Select
+                                </label>
+                            </th>
+                            <th>Item ID</th>
                             <th>Order ID</th>
-                            <th>Product</th>
+                            <th>Product Name</th>
                             <th>Quantity</th>
                             <th>Unit Price</th>
                             <th>Total Price</th>
@@ -103,13 +109,14 @@
 
                 <!-- Loading indicator -->
                 <div id="loadingIndicator" class="loading-indicator">
-                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                    <i class="fas fa-spinner fa-spin"></i> Loading order items...
                 </div>
 
                 <!-- No data message -->
                 <div id="noDataMessage" class="no-data-message" style="display: none;">
                     <i class="fas fa-inbox"></i>
                     <p>No order items found</p>
+                    <p class="text-muted">Try adjusting your filters or add a new order item</p>
                 </div>
             </div>
         </section>
@@ -120,42 +127,42 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="modalTitle"><i class="fas fa-shopping-cart"></i> Add Order Item</h2>
-                <button class="modal-close" id="closeModal">
+                <button class="modal-close" id="closeModal" title="Close Modal">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
 
             <form id="orderItemForm" class="modal-form">
                 <div class="form-group">
-                    <label for="orderId">Order *</label>
+                    <label for="orderId">Select Order *</label>
                     <select id="orderId" name="orderId" class="form-select" required>
-                        <option value="">Select Order</option>
+                        <option value="">Choose an order...</option>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label for="productId">Product *</label>
+                    <label for="productId">Select Product *</label>
                     <select id="productId" name="productId" class="form-select" required>
-                        <option value="">Select Product</option>
+                        <option value="">Choose a product...</option>
                     </select>
                 </div>
 
                 <div class="form-group">
                     <label for="quantity">Quantity *</label>
                     <input type="number" id="quantity" name="quantity" class="form-input"
-                           min="1" step="1" required>
+                           min="1" step="1" placeholder="Enter quantity" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="unitPrice">Unit Price *</label>
+                    <label for="unitPrice">Unit Price * ($)</label>
                     <input type="number" id="unitPrice" name="unitPrice" class="form-input"
-                           min="0" step="0.01" required>
+                           min="0" step="0.01" placeholder="0.00" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="totalPrice">Total Price</label>
+                    <label for="totalPrice">Total Price ($)</label>
                     <input type="number" id="totalPrice" name="totalPrice" class="form-input"
-                           readonly>
+                           placeholder="Calculated automatically" readonly>
                 </div>
 
                 <div class="modal-actions">
@@ -163,7 +170,7 @@
                         <i class="fas fa-times"></i> Cancel
                     </button>
                     <button type="submit" id="saveBtn" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Save
+                        <i class="fas fa-save"></i> Save Order Item
                     </button>
                 </div>
             </form>
@@ -180,8 +187,12 @@
                 <p id="confirmMessage">Are you sure you want to perform this action?</p>
             </div>
             <div class="modal-actions">
-                <button id="confirmCancel" class="btn btn-secondary">Cancel</button>
-                <button id="confirmOk" class="btn btn-danger">Confirm</button>
+                <button id="confirmCancel" class="btn btn-secondary">
+                    <i class="fas fa-ban"></i> Cancel
+                </button>
+                <button id="confirmOk" class="btn btn-danger">
+                    <i class="fas fa-check"></i> Confirm
+                </button>
             </div>
         </div>
     </div>
