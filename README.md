@@ -71,7 +71,6 @@ products-management-system/
 │   │   │           └── exceptions/
 │   │   └── resources/
 │   │       ├── application.properties
-│   │       ├── data.sql
 │   │       └── static/
 │   └── test/
 │       └── java/
