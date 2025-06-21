@@ -62,22 +62,15 @@ products-management-system/
 │   │   │   └── com/
 │   │   │       └── pms/
 │   │   │           ├── ProductsManagementSystemApplication.java
-│   │   │           ├── config/
-│   │   │           ├── model/
-│   │   │           │   ├── entity/
-│   │   │           │   ├── enums/
-│   │   │           │   └── dto/
-│   │   │           ├── repository/
-│   │   │           ├── service/
-│   │   │           │   ├── interfaces/
-│   │   │           │   └── impl/
-│   │   │           ├── controller/
-│   │   │           ├── security/
-│   │   │           ├── exception/
-│   │   │           └── util/
+│   │   │           ├── entities/
+│   │   │           ├── enums/
+│   │   │           ├── dto/
+│   │   │           ├── repositories/
+│   │   │           ├── services/
+│   │   │           ├── controllers/
+│   │   │           └── exceptions/
 │   │   └── resources/
 │   │       ├── application.properties
-│   │       ├── data.sql
 │   │       └── static/
 │   └── test/
 │       └── java/
@@ -255,6 +248,8 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Authors
 - Mateusz Marciniak
 - Oskar Wojtkowiak
+
+## !README might not be 100% accurate
 
 ## Acknowledgments
 - Spring Framework team
