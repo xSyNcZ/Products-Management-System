@@ -249,6 +249,8 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - Mateusz Marciniak
 - Oskar Wojtkowiak
 
+## !README might not be 100% accurate
+
 ## Acknowledgments
 - Spring Framework team
 - Hibernate team
