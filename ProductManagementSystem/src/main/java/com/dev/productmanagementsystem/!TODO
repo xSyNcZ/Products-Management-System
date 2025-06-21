@@ -33,21 +33,20 @@ AFTER 7.05.2025.
 + fix database in app properties
 + fix dependencies in maven
 + create frontend
-- delete proxies and mockups (or rather comment them)
-- and connect actual api
-(left to do:, permissions, roles, users)
-(fix add warehouse function)
-(fix order creation - problems with billingAdressId, ShippingAddressId, modify controller)
-- modify the recent activity in index.html so it actually sees recent activity
-- test if it works
++ delete proxies and mockups (or rather comment them)
++ and connect actual api
+(fix record payment button)
+(fix categories frontend)
++ modify the recent activity in index so it actually sees recent activity (DELETED)
++ test if it works
 
 [BEFORE THE FINISHING OF PROJECT]
-- fix class diagram
 - update the folder structure
+- update README
 - update diagram
+- fix class diagram
 - delete unnecessary imports
 - fix gitignore (optional)
-- update README
 
 FURTHER IMPROVEMENTS:
 - modify the frontend, so it has more functions and looks better

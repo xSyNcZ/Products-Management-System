@@ -13,9 +13,6 @@
             <a href="index.html">Dashboard</a> > User Management
         </nav>
         <h1>User Management</h1>
-        <div class="user-info">
-            <span id="currentUser">Admin User</span>
-        </div>
     </header>
 
     <div class="content-area">
@@ -23,8 +20,17 @@
             <button onclick="showCreateUserModal()" class="btn btn-primary">Create User</button>
             <button onclick="refreshUsers()" class="btn btn-secondary">Refresh</button>
             <div class="search-box">
-                <input type="text" id="userSearch" placeholder="Search users..." onkeyup="filterUsers()">
+                <input type="text" id="userSearch" placeholder="Search users by name..." onkeyup="filterUsers()">
             </div>
+        </div>
+
+        <!-- Filter buttons -->
+        <div class="filter-buttons">
+            <button onclick="setActiveFilter('all')" class="active" id="allUsersBtn">All Users</button>
+            <button onclick="setActiveFilter('active')" id="activeUsersBtn">Active Users</button>
+            <button onclick="setActiveFilter('ADMIN')" id="adminUsersBtn">Admins</button>
+            <button onclick="setActiveFilter('USER')" id="userUsersBtn">Regular Users</button>
+            <button onclick="setActiveFilter('MANAGER')" id="managerUsersBtn">Managers</button>
         </div>
 
         <div class="table-container">
@@ -36,7 +42,8 @@
                     <th>Email</th>
                     <th>First Name</th>
                     <th>Last Name</th>
-                    <th>Roles</th>
+                    <th>Role</th>
+                    <th>Status</th>
                     <th>Actions</th>
                 </tr>
                 </thead>
@@ -55,38 +62,42 @@
             <h3 id="modalTitle">Create User</h3>
             <span class="close" onclick="closeUserModal()">&times;</span>
         </div>
-        <form id="userForm">
-            <div class="form-group">
-                <label for="username">Username:</label>
-                <input type="text" id="username" name="username" required>
-            </div>
-            <div class="form-group">
-                <label for="email">Email:</label>
-                <input type="email" id="email" name="email" required>
-            </div>
-            <div class="form-group">
-                <label for="password">Password:</label>
-                <input type="password" id="password" name="password" required>
-            </div>
-            <div class="form-group">
-                <label for="firstName">First Name:</label>
-                <input type="text" id="firstName" name="firstName">
-            </div>
-            <div class="form-group">
-                <label for="lastName">Last Name:</label>
-                <input type="text" id="lastName" name="lastName">
-            </div>
-            <div class="form-group">
-                <label for="roles">Roles:</label>
-                <select id="roles" name="roles" multiple>
-                    <!-- Roles will be loaded here -->
-                </select>
-            </div>
-            <div class="form-actions">
-                <button type="submit" class="btn btn-primary">Save</button>
-                <button type="button" onclick="closeUserModal()" class="btn btn-secondary">Cancel</button>
-            </div>
-        </form>
+        <div class="modal-body">
+            <form id="userForm">
+                <div class="form-group">
+                    <label for="username">Username *</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email *</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="firstName">First Name</label>
+                    <input type="text" id="firstName" name="firstName">
+                </div>
+                <div class="form-group">
+                    <label for="lastName">Last Name</label>
+                    <input type="text" id="lastName" name="lastName">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Leave empty to keep current password">
+                </div>
+                <div class="form-group">
+                    <label for="roles">Role</label>
+                    <select id="roles" name="roles" required>
+                        <option value="USER">USER</option>
+                        <option value="ADMIN">ADMIN</option>
+                        <option value="MANAGER">MANAGER</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                    <button type="button" onclick="closeUserModal()" class="btn btn-secondary">Cancel</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -97,32 +108,30 @@
             <h3>Manage Address</h3>
             <span class="close" onclick="closeAddressModal()">&times;</span>
         </div>
-        <form id="addressForm">
-            <div class="form-group">
-                <label for="streetAddress">Street Address:</label>
-                <input type="text" id="streetAddress" name="streetAddress">
-            </div>
-            <div class="form-group">
-                <label for="city">City:</label>
-                <input type="text" id="city" name="city">
-            </div>
-            <div class="form-group">
-                <label for="state">State:</label>
-                <input type="text" id="state" name="state">
-            </div>
-            <div class="form-group">
-                <label for="postalCode">Postal Code:</label>
-                <input type="text" id="postalCode" name="postalCode">
-            </div>
-            <div class="form-group">
-                <label for="country">Country:</label>
-                <input type="text" id="country" name="country">
-            </div>
-            <div class="form-actions">
-                <button type="submit" class="btn btn-primary">Save Address</button>
-                <button type="button" onclick="closeAddressModal()" class="btn btn-secondary">Cancel</button>
-            </div>
-        </form>
+        <div class="modal-body">
+            <form id="addressForm">
+                <div class="form-group">
+                    <label for="street">Street</label>
+                    <input type="text" id="street" name="street">
+                </div>
+                <div class="form-group">
+                    <label for="city">City</label>
+                    <input type="text" id="city" name="city">
+                </div>
+                <div class="form-group">
+                    <label for="postalCode">Postal Code</label>
+                    <input type="text" id="postalCode" name="postalCode">
+                </div>
+                <div class="form-group">
+                    <label for="country">Country</label>
+                    <input type="text" id="country" name="country">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save Address</button>
+                    <button type="button" onclick="closeAddressModal()" class="btn btn-secondary">Cancel</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
