@@ -234,11 +234,18 @@ class WarehouseManager {
         form.reset();
 
         if (warehouse) {
+            // Populate form fields for editing
             const nameInput = document.getElementById('name');
             const locationInput = document.getElementById('location');
+            const addressInput = document.getElementById('address');
+            const capacityInput = document.getElementById('capacity');
+            const managerSelect = document.getElementById('managerId');
 
             if (nameInput) nameInput.value = warehouse.name || '';
             if (locationInput) locationInput.value = warehouse.location || '';
+            if (addressInput) addressInput.value = warehouse.address || '';
+            if (capacityInput) capacityInput.value = warehouse.capacity || '';
+            if (managerSelect && warehouse.managerId) managerSelect.value = warehouse.managerId;
         }
 
         modal.style.display = 'block';
@@ -254,6 +261,9 @@ class WarehouseManager {
         const formData = new FormData(form);
         const name = formData.get('name')?.toString().trim();
         const location = formData.get('location')?.toString().trim();
+        const address = formData.get('address')?.toString().trim();
+        const capacity = formData.get('capacity')?.toString().trim();
+        const managerId = formData.get('managerId')?.toString().trim();
 
         // Validation
         if (!name) {
@@ -266,14 +276,6 @@ class WarehouseManager {
             return;
         }
 
-        // Create warehouse object matching Spring Boot entity structure
-        const warehouseData = {
-            name,
-            location,
-            address: location, // Use location as address if no separate address field
-            capacity: null // Set default or add capacity field to form
-        };
-
         try {
             const url = this.currentWarehouse ?
                 `${this.apiUrl}/${this.currentWarehouse.id}` :
@@ -281,16 +283,27 @@ class WarehouseManager {
 
             const method = this.currentWarehouse ? 'PUT' : 'POST';
 
-            console.log('Saving warehouse:', warehouseData, 'to:', url);
+            console.log('Saving warehouse to:', url, 'with method:', method);
+
+            // Create URLSearchParams for form data submission
+            const params = new URLSearchParams();
+            params.append('name', name);
+            params.append('location', location);
+            if (address) params.append('address', address);
+            if (capacity) params.append('capacity', capacity);
+            if (managerId) params.append('managerId', managerId);
+
+            console.log('Form data:', params.toString());
+
+            // Get auth headers and add Content-Type for form data
+            const headers = this.getAuthHeaders();
+            headers['Content-Type'] = 'application/x-www-form-urlencoded';
 
             const response = await fetch(url, {
                 method: method,
-                headers: {
-                    ...this.getAuthHeaders(),
-                    'Content-Type': 'application/json'
-                },
+                headers: headers,
                 mode: 'cors',
-                body: JSON.stringify(warehouseData)
+                body: params.toString()
             });
 
             console.log('Save response status:', response.status);
@@ -656,9 +669,7 @@ class WarehouseManager {
 
     getAuthHeaders() {
         const token = localStorage.getItem('authToken');
-        const headers = {
-            'Content-Type': 'application/json'
-        };
+        const headers = {};
 
         if (token) {
             headers['Authorization'] = `Bearer ${token}`;

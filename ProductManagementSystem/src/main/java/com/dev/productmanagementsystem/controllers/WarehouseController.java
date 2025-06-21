@@ -92,14 +92,59 @@ public class WarehouseController {
         return ResponseEntity.ok(products);
     }
 
-    @PostMapping
-    public ResponseEntity<WarehouseDTO> createWarehouse(@RequestBody Warehouse warehouse) {
+    // Modified to accept form data instead of JSON
+    @PostMapping(consumes = "application/x-www-form-urlencoded")
+    public ResponseEntity<WarehouseDTO> createWarehouse(
+            @RequestParam String name,
+            @RequestParam String location,
+            @RequestParam(required = false) String address,
+            @RequestParam(required = false) Double capacity) {
+
+        Warehouse warehouse = new Warehouse();
+        warehouse.setName(name);
+        warehouse.setLocation(location);
+        warehouse.setAddress(address);
+        warehouse.setCapacity(capacity);
+
         Warehouse createdWarehouse = warehouseService.save(warehouse);
         return new ResponseEntity<>(convertToDTO(createdWarehouse), HttpStatus.CREATED);
     }
 
-    @PutMapping("/{id}")
+    // Alternative POST method that still accepts JSON (if needed)
+    @PostMapping(consumes = "application/json")
+    public ResponseEntity<WarehouseDTO> createWarehouseJson(@RequestBody Warehouse warehouse) {
+        Warehouse createdWarehouse = warehouseService.save(warehouse);
+        return new ResponseEntity<>(convertToDTO(createdWarehouse), HttpStatus.CREATED);
+    }
+
+    // Modified to accept form data instead of JSON
+    @PutMapping(value = "/{id}", consumes = "application/x-www-form-urlencoded")
     public ResponseEntity<WarehouseDTO> updateWarehouse(
+            @PathVariable Long id,
+            @RequestParam String name,
+            @RequestParam String location,
+            @RequestParam(required = false) String address,
+            @RequestParam(required = false) Double capacity) {
+
+        Optional<Warehouse> existingWarehouse = warehouseService.findById(id);
+        if (!existingWarehouse.isPresent()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Warehouse warehouse = new Warehouse();
+        warehouse.setId(id);
+        warehouse.setName(name);
+        warehouse.setLocation(location);
+        warehouse.setAddress(address);
+        warehouse.setCapacity(capacity);
+
+        Warehouse updatedWarehouse = warehouseService.save(warehouse);
+        return ResponseEntity.ok(convertToDTO(updatedWarehouse));
+    }
+
+    // Alternative PUT method that still accepts JSON (if needed)
+    @PutMapping(value = "/{id}", consumes = "application/json")
+    public ResponseEntity<WarehouseDTO> updateWarehouseJson(
             @PathVariable Long id,
             @RequestBody Warehouse warehouse) {
         Optional<Warehouse> existingWarehouse = warehouseService.findById(id);

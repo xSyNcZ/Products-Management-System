@@ -130,23 +130,62 @@ public class OrderController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createOrder(@Valid @RequestBody OrderDTO orderDTO, BindingResult bindingResult) {
-        log.info("Creating new order for customer ID: {}", orderDTO.getCustomerId());
-
-        // Check for validation errors
-        if (bindingResult.hasErrors()) {
-            Map<String, String> errors = new HashMap<>();
-            bindingResult.getFieldErrors().forEach(error -> {
-                errors.put(error.getField(), error.getDefaultMessage());
-            });
-            log.error("Validation errors in order creation: {}", errors);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
-        }
+    public ResponseEntity<?> createOrder(@RequestBody Map<String, Object> orderRequest) {
+        log.info("Creating new order with data: {}", orderRequest);
 
         try {
+            // Extract data from request
+            Long customerId = getLongFromMap(orderRequest, "customerId");
+            Long billingAddressId = getLongFromMap(orderRequest, "billingAddressId");
+            Long shippingAddressId = getLongFromMap(orderRequest, "shippingAddressId");
+
+            // Handle orderItems from frontend
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> orderItemsData = (List<Map<String, Object>>) orderRequest.get("orderItems");
+
+            // Validate required fields
+            if (customerId == null) {
+                Map<String, String> error = Map.of("error", "Customer ID is required");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+            }
+
+            if (billingAddressId == null) {
+                Map<String, String> error = Map.of("error", "Billing address ID is required");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+            }
+
+            if (shippingAddressId == null) {
+                Map<String, String> error = Map.of("error", "Shipping address ID is required");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+            }
+
+            if (orderItemsData == null || orderItemsData.isEmpty()) {
+                Map<String, String> error = Map.of("error", "Order must contain at least one item");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+            }
+
+            // Create OrderDTO
+            OrderDTO orderDTO = new OrderDTO();
+            orderDTO.setCustomerId(customerId);
+            orderDTO.setBillingAddressId(billingAddressId);
+            orderDTO.setShippingAddressId(shippingAddressId);
+
+            // Convert orderItems to OrderItemDTO list
+            List<OrderItemDTO> items = orderItemsData.stream()
+                    .map(this::convertToOrderItemDTO)
+                    .collect(Collectors.toList());
+
+            orderDTO.setItems(items);
+
+            // Log the final DTO
+            log.info("Converted OrderDTO: customerId={}, billingAddressId={}, shippingAddressId={}, items count={}",
+                    orderDTO.getCustomerId(), orderDTO.getBillingAddressId(),
+                    orderDTO.getShippingAddressId(), orderDTO.getItems().size());
+
             OrderDTO createdOrder = orderService.createOrder(orderDTO);
             log.info("Order created successfully with ID: {}", createdOrder.getId());
             return new ResponseEntity<>(createdOrder, HttpStatus.CREATED);
+
         } catch (IllegalArgumentException e) {
             log.error("Failed to create order: Invalid input - {}", e.getMessage());
             Map<String, String> error = Map.of("error", e.getMessage());
@@ -161,9 +200,68 @@ public class OrderController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
         } catch (Exception e) {
             log.error("Failed to create order", e);
-            Map<String, String> error = Map.of("error", "Internal server error occurred while creating order");
+            Map<String, String> error = Map.of("error", "Internal server error occurred while creating order: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
+    }
+
+    // Helper method to safely extract Long values from Map
+    private Long getLongFromMap(Map<String, Object> map, String key) {
+        Object value = map.get(key);
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number) {
+            return ((Number) value).longValue();
+        }
+        if (value instanceof String) {
+            try {
+                return Long.parseLong((String) value);
+            } catch (NumberFormatException e) {
+                log.warn("Invalid number format for key {}: {}", key, value);
+                return null;
+            }
+        }
+        return null;
+    }
+
+    // Helper method to convert Map to OrderItemDTO
+    private OrderItemDTO convertToOrderItemDTO(Map<String, Object> itemData) {
+        OrderItemDTO item = new OrderItemDTO();
+
+        Long productId = getLongFromMap(itemData, "productId");
+        if (productId == null) {
+            throw new IllegalArgumentException("Product ID is required for order item");
+        }
+        item.setProductId(productId);
+
+        Object quantityObj = itemData.get("quantity");
+        if (quantityObj == null) {
+            throw new IllegalArgumentException("Quantity is required for order item");
+        }
+
+        Integer quantity;
+        if (quantityObj instanceof Number) {
+            quantity = ((Number) quantityObj).intValue();
+        } else if (quantityObj instanceof String) {
+            try {
+                quantity = Integer.parseInt((String) quantityObj);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Invalid quantity format");
+            }
+        } else {
+            throw new IllegalArgumentException("Invalid quantity format");
+        }
+
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("Quantity must be positive");
+        }
+        item.setQuantity(quantity);
+
+        // Note: unitPrice from frontend is not used in service,
+        // as it's set from the product's current price
+
+        return item;
     }
 
     @PutMapping("/{id}")

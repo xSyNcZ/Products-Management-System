@@ -1,4 +1,4 @@
-// Roles Management JavaScript
+// Roles Management JavaScript - API Connected Version
 
 class RoleManager {
     constructor() {
@@ -16,15 +16,18 @@ class RoleManager {
             this.renderPermissionsGrid();
         } catch (error) {
             console.error('Error initializing RoleManager:', error);
+            this.showErrorMessage('Failed to initialize role manager: ' + error.message);
         }
     }
 
-    // Load all permissions
+    // Load all permissions from API
     async loadPermissions() {
         try {
             const response = await fetch(`${this.apiBaseUrl}/permissions`);
             if (response.ok) {
                 this.permissions = await response.json();
+            } else {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
         } catch (error) {
             console.error('Error loading permissions:', error);
@@ -49,106 +52,193 @@ class RoleManager {
         }
     }
 
-    // Load all roles
+    // Load all roles from API
     async loadRoles() {
         try {
             const response = await fetch(`${this.apiBaseUrl}/roles`);
             if (response.ok) {
-                this.roles = await response.json();
+                const roleDTOs = await response.json();
+                // Convert DTOs to frontend format
+                this.roles = roleDTOs.map(dto => this.convertDTOToRole(dto));
             } else {
-                // Fallback roles for demo purposes
-                this.roles = [
-                    {
-                        id: 1,
-                        name: 'ADMIN',
-                        permissions: this.permissions.filter(p => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].includes(p.id))
-                    },
-                    {
-                        id: 2,
-                        name: 'MANAGER',
-                        permissions: this.permissions.filter(p => [2, 3, 5, 6, 7, 9, 10, 11, 13, 14].includes(p.id))
-                    },
-                    {
-                        id: 3,
-                        name: 'EMPLOYEE',
-                        permissions: this.permissions.filter(p => [2, 6, 9, 10].includes(p.id))
-                    },
-                    {
-                        id: 4,
-                        name: 'CUSTOMER',
-                        permissions: this.permissions.filter(p => [6, 9].includes(p.id))
-                    }
-                ];
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             this.renderRolesList();
         } catch (error) {
             console.error('Error loading roles:', error);
+            this.showErrorMessage('Failed to load roles: ' + error.message);
+            // Use fallback data for demo
+            this.roles = [
+                {
+                    id: 1,
+                    name: 'ADMIN',
+                    permissions: this.permissions.filter(p => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].includes(p.id))
+                },
+                {
+                    id: 2,
+                    name: 'MANAGER',
+                    permissions: this.permissions.filter(p => [2, 3, 5, 6, 7, 9, 10, 11, 13, 14].includes(p.id))
+                },
+                {
+                    id: 3,
+                    name: 'EMPLOYEE',
+                    permissions: this.permissions.filter(p => [2, 6, 9, 10].includes(p.id))
+                },
+                {
+                    id: 4,
+                    name: 'CUSTOMER',
+                    permissions: this.permissions.filter(p => [6, 9].includes(p.id))
+                }
+            ];
+            this.renderRolesList();
         }
+    }
+
+    // Convert RoleDTO from backend to frontend role object
+    convertDTOToRole(dto) {
+        return {
+            id: dto.id,
+            name: dto.name,
+            permissions: dto.permissionIds ?
+                dto.permissionIds.map(permId =>
+                    this.permissions.find(p => p.id === permId)
+                ).filter(Boolean) : []
+        };
+    }
+
+    // Convert frontend role to RoleDTO for backend
+    convertRoleToDTO(role, selectedPermissionIds = null) {
+        return {
+            id: role.id,
+            name: role.name,
+            permissionIds: selectedPermissionIds ||
+                (role.permissions ? role.permissions.map(p => p.id) : [])
+        };
     }
 
     // Create a new role
     async createRole(roleData) {
         try {
+            const roleDTO = {
+                name: roleData.name,
+                permissionIds: roleData.permissions.map(p => p.id)
+            };
+
             const response = await fetch(`${this.apiBaseUrl}/roles`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(roleData)
+                body: JSON.stringify(roleDTO)
             });
 
             if (response.ok) {
-                const newRole = await response.json();
+                const createdRoleDTO = await response.json();
+                const newRole = this.convertDTOToRole(createdRoleDTO);
                 this.roles.push(newRole);
                 this.renderRolesList();
                 return newRole;
             } else {
-                throw new Error('Failed to create role');
+                const errorText = await response.text();
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
             }
         } catch (error) {
             console.error('Error creating role:', error);
-            // Simulate successful creation for demo
-            const newRole = {
-                id: Date.now(),
-                name: roleData.name,
-                permissions: roleData.permissions || []
-            };
-            this.roles.push(newRole);
-            this.renderRolesList();
-            return newRole;
+            throw error;
         }
     }
 
     // Update an existing role
     async updateRole(roleId, roleData) {
         try {
+            // First update the role name
+            const roleDTO = {
+                name: roleData.name,
+                permissionIds: roleData.permissions.map(p => p.id)
+            };
+
             const response = await fetch(`${this.apiBaseUrl}/roles/${roleId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(roleData)
+                body: JSON.stringify(roleDTO)
             });
 
             if (response.ok) {
-                const updatedRole = await response.json();
+                const updatedRoleDTO = await response.json();
+
+                // Update permissions separately if needed
+                await this.updateRolePermissions(roleId, roleData.permissions.map(p => p.id));
+
+                // Reload the specific role to get updated permissions
+                await this.reloadRole(roleId);
+
+                return true;
+            } else {
+                const errorText = await response.text();
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
+            }
+        } catch (error) {
+            console.error('Error updating role:', error);
+            throw error;
+        }
+    }
+
+    // Update role permissions specifically
+    async updateRolePermissions(roleId, newPermissionIds) {
+        try {
+            const currentRole = this.getRoleById(roleId);
+            const currentPermissionIds = currentRole.permissions.map(p => p.id);
+
+            // Find permissions to add and remove
+            const permissionsToAdd = newPermissionIds.filter(id => !currentPermissionIds.includes(id));
+            const permissionsToRemove = currentPermissionIds.filter(id => !newPermissionIds.includes(id));
+
+            // Add new permissions
+            if (permissionsToAdd.length > 0) {
+                await fetch(`${this.apiBaseUrl}/roles/${roleId}/permissions/add`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(permissionsToAdd)
+                });
+            }
+
+            // Remove old permissions
+            if (permissionsToRemove.length > 0) {
+                await fetch(`${this.apiBaseUrl}/roles/${roleId}/permissions/remove`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(permissionsToRemove)
+                });
+            }
+        } catch (error) {
+            console.error('Error updating role permissions:', error);
+            throw error;
+        }
+    }
+
+    // Reload a specific role from the API
+    async reloadRole(roleId) {
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/roles/${roleId}`);
+            if (response.ok) {
+                const roleDTO = await response.json();
+                const updatedRole = this.convertDTOToRole(roleDTO);
+
                 const index = this.roles.findIndex(r => r.id === roleId);
                 if (index !== -1) {
                     this.roles[index] = updatedRole;
                     this.renderRolesList();
                 }
                 return updatedRole;
-            } else {
-                throw new Error('Failed to update role');
             }
         } catch (error) {
-            console.error('Error updating role:', error);
-            // Simulate successful update for demo
-            const index = this.roles.findIndex(r => r.id === roleId);
-            if (index !== -1) {
-                this.roles[index] = { ...this.roles[index], ...roleData };
-                this.renderRolesList();
-            }
+            console.error('Error reloading role:', error);
         }
     }
 
@@ -164,13 +254,12 @@ class RoleManager {
                 this.renderRolesList();
                 return true;
             } else {
-                throw new Error('Failed to delete role');
+                const errorText = await response.text();
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
             }
         } catch (error) {
             console.error('Error deleting role:', error);
-            // Simulate successful deletion for demo
-            this.roles = this.roles.filter(r => r.id !== roleId);
-            this.renderRolesList();
+            throw error;
         }
     }
 
@@ -185,7 +274,8 @@ class RoleManager {
         return this.roles.filter(role =>
             role.name.toLowerCase().includes(lowerQuery) ||
             (role.permissions && role.permissions.some(p =>
-                p.name.toLowerCase().includes(lowerQuery)
+                p.name.toLowerCase().includes(lowerQuery) ||
+                (p.description && p.description.toLowerCase().includes(lowerQuery))
             ))
         );
     }
@@ -242,7 +332,7 @@ class RoleManager {
         div.className = 'role-item';
 
         const permissionsList = role.permissions && role.permissions.length > 0
-            ? role.permissions.map(p => `<span class="permission-tag">${p.name}</span>`).join('')
+            ? role.permissions.map(p => `<span class="permission-tag" title="${p.description || p.name}">${p.name}</span>`).join('')
             : '<span class="permission-tag" style="background: #6c757d;">No permissions</span>';
 
         div.innerHTML = `
@@ -299,16 +389,30 @@ class RoleManager {
         const roleId = formData.get('roleId');
 
         try {
+            // Show loading state
+            const submitButton = form.querySelector('button[type="submit"]');
+            const originalText = submitButton.textContent;
+            submitButton.textContent = 'Saving...';
+            submitButton.disabled = true;
+
             if (roleId) {
                 await this.updateRole(parseInt(roleId), roleData);
+                this.showSuccessMessage('Role updated successfully!');
             } else {
                 await this.createRole(roleData);
+                this.showSuccessMessage('Role created successfully!');
             }
+
             form.reset();
             this.clearForm();
-            this.showSuccessMessage(roleId ? 'Role updated successfully!' : 'Role created successfully!');
+
         } catch (error) {
             this.showErrorMessage('Error saving role: ' + error.message);
+        } finally {
+            // Restore button state
+            const submitButton = form.querySelector('button[type="submit"]');
+            submitButton.textContent = submitButton.textContent === 'Saving...' ? 'Save Role' : submitButton.textContent;
+            submitButton.disabled = false;
         }
     }
 
@@ -363,17 +467,28 @@ class RoleManager {
             });
         }
 
+        // Update submit button text
+        const submitButton = form.querySelector('button[type="submit"]');
+        if (submitButton) {
+            submitButton.textContent = 'Update Role';
+        }
+
         // Scroll to form
         form.scrollIntoView({ behavior: 'smooth' });
     }
 
     // Confirm delete role
-    confirmDeleteRole(roleId) {
+    async confirmDeleteRole(roleId) {
         const role = this.getRoleById(roleId);
         if (!role) return;
 
         if (confirm(`Are you sure you want to delete the role "${role.name}"? This action cannot be undone.`)) {
-            this.deleteRole(roleId);
+            try {
+                await this.deleteRole(roleId);
+                this.showSuccessMessage('Role deleted successfully!');
+            } catch (error) {
+                this.showErrorMessage('Error deleting role: ' + error.message);
+            }
         }
     }
 
@@ -384,19 +499,63 @@ class RoleManager {
             form.elements.roleId.value = '';
             const checkboxes = form.querySelectorAll('input[name="permissions"]');
             checkboxes.forEach(checkbox => checkbox.checked = false);
+
+            // Reset submit button text
+            const submitButton = form.querySelector('button[type="submit"]');
+            if (submitButton) {
+                submitButton.textContent = 'Save Role';
+            }
         }
     }
 
-    // Show success message
+    // Show success message (you can replace with a proper toast/notification system)
     showSuccessMessage(message) {
-        // You can implement a toast notification or alert here
-        alert(message);
+        // Simple implementation - replace with your preferred notification system
+        const notification = document.createElement('div');
+        notification.className = 'notification success';
+        notification.textContent = message;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #28a745;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 5px;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        `;
+
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
     }
 
-    // Show error message
+    // Show error message (you can replace with a proper toast/notification system)
     showErrorMessage(message) {
-        // You can implement a toast notification or alert here
-        alert(message);
+        // Simple implementation - replace with your preferred notification system
+        const notification = document.createElement('div');
+        notification.className = 'notification error';
+        notification.textContent = message;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #dc3545;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 5px;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        `;
+
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.remove();
+        }, 5000);
     }
 }
 

@@ -5,10 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Permission Management - Product Management System</title>
     <link rel="stylesheet" href="styles.css">
+
 </head>
 <body>
 <div class="container">
-    <h1>Permission Management</h1>
+    <!-- Breadcrumbs -->
+    <nav class="breadcrumbs">
+        <a href="index.html">Dashboard</a>
+        <span class="breadcrumb-separator">></span>
+        <span class="breadcrumb-current">Permission Management</span>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Permission Management</h1>
+            <p class="page-subtitle">Manage system permissions and access control</p>
+        </div>
+    </div>
+
+    <!-- System Status Section -->
+    <div class="system-status">
+        <div class="status-indicator" id="api-status">
+            <span class="status-dot" id="status-dot"></span>
+            <span id="status-text">Connecting to API...</span>
+        </div>
+        <div class="sync-controls">
+            <button type="button" class="btn btn-secondary" onclick="syncPermissions()" title="Sync missing default permissions">
+                Sync Permissions
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="validatePermissions()" title="Validate permission system integrity">
+                Validate System
+            </button>
+        </div>
+    </div>
 
     <!-- Statistics Section -->
     <div class="stats-section">
@@ -25,48 +55,173 @@
                 <div class="stat-number" id="unused-permissions">0</div>
                 <div class="stat-label">Unused</div>
             </div>
+            <div class="stat-card">
+                <div class="stat-number" id="roles-count">0</div>
+                <div class="stat-label">Associated Roles</div>
+            </div>
         </div>
     </div>
 
     <div class="management-section">
         <!-- Permission Form Section -->
         <div class="form-section">
-            <h2>Create/Edit Permission</h2>
+            <h2 class="section-title">Create/Edit Permission</h2>
             <form id="permission-form">
                 <input type="hidden" id="permissionId" name="permissionId">
 
                 <div class="form-group">
-                    <label for="permissionName">Permission Name</label>
-                    <input type="text" id="permissionName" name="name" required placeholder="e.g., USER_CREATE, PRODUCT_READ">
+                    <label for="permissionName">Permission Name *</label>
+                    <input type="text" id="permissionName" name="name" required
+                           placeholder="e.g. product:create, user:manage_roles"
+                           pattern="^[a-z_]+:[a-z_]+$"
+                           title="Format: resource:action (lowercase with underscores)">
+                    <div class="form-help">Use format: resource:action (e.g., product:create, user:manage_roles)</div>
                 </div>
 
                 <div class="form-group">
                     <label for="permissionDescription">Description</label>
-                    <textarea id="permissionDescription" name="description" placeholder="Describe what this permission allows users to do..."></textarea>
+                    <textarea id="permissionDescription" name="description"
+                              placeholder="Describe what this permission allows users to do..."
+                              rows="4"></textarea>
+                    <div class="form-help">Provide a clear description of what this permission grants access to</div>
                 </div>
 
                 <div class="form-group">
-                    <button type="submit" class="btn btn-primary">Save Permission</button>
-                    <button type="button" class="btn btn-secondary" onclick="clearPermissionForm()">Clear</button>
+                    <label for="permissionCategory">Category</label>
+                    <select id="permissionCategory" name="category">
+                        <option value="">Select Category</option>
+                        <option value="user">👥 User Management</option>
+                        <option value="role">🔐 Role Management</option>
+                        <option value="product">📦 Product Management</option>
+                        <option value="order">🛒 Order Management</option>
+                        <option value="payment">💳 Payment Management</option>
+                        <option value="warehouse">🏭 Warehouse Management</option>
+                        <option value="system">⚙️ System Administration</option>
+                        <option value="report">📊 Reporting</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary" id="save-btn">
+                        <span class="btn-text">💾 Save Permission</span>
+                        <span class="btn-loading" style="display: none;">⏳ Saving...</span>
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="clearPermissionForm()">
+                        🔄 Clear Form
+                    </button>
+                    <button type="button" class="btn btn-danger" id="delete-btn" style="display: none;" onclick="deletePermission()">
+                        🗑️ Delete
+                    </button>
                 </div>
             </form>
         </div>
 
         <!-- Permissions List Section -->
         <div class="permissions-list">
-            <h2>Existing Permissions</h2>
+            <h2 class="section-title">Existing Permissions</h2>
 
-            <div class="search-section">
-                <input type="text" id="permission-search" placeholder="Search permissions...">
+            <div class="controls-section">
+                <div class="search-section">
+                    <input type="text" id="permission-search" placeholder="🔍 Search permissions..." onkeyup="filterPermissions()">
+                </div>
+
+                <div class="filter-section">
+                    <select id="category-filter" onchange="filterPermissions()">
+                        <option value="">All Categories</option>
+                        <option value="user">👥 User Management</option>
+                        <option value="role">🔐 Role Management</option>
+                        <option value="product">📦 Product Management</option>
+                        <option value="order">🛒 Order Management</option>
+                        <option value="payment">💳 Payment Management</option>
+                        <option value="warehouse">🏭 Warehouse Management</option>
+                        <option value="system">⚙️ System Administration</option>
+                        <option value="report">📊 Reporting</option>
+                    </select>
+                </div>
+
+                <div class="action-section">
+                    <button type="button" class="btn btn-primary" onclick="loadPermissions()" title="Refresh permission list">
+                        Refresh
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="exportPermissions()" title="Export permissions to JSON">
+                        Export
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="importPermissions()" title="Import permissions from JSON">
+                        Import
+                    </button>
+                </div>
             </div>
 
             <div id="permissions-container">
-                <!-- Permissions will be loaded here dynamically -->
+                <div class="loading-state" id="loading-permissions">
+                    <div class="loading-spinner"></div>
+                    <p>Loading permissions...</p>
+                </div>
+
+                <div class="empty-state" id="empty-permissions" style="display: none;">
+                    <p>📋 No permissions found.</p>
+                    <p>Get started by creating your first permission or initializing default permissions.</p>
+                    <button type="button" class="btn btn-primary" onclick="initializeDefaultPermissions()">
+                        🚀 Initialize Default Permissions
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination-section" id="pagination" style="display: none;">
+                <button type="button" class="btn btn-secondary" id="prev-page" onclick="changePage(-1)">
+                    ← Previous
+                </button>
+                <span id="page-info">Page 1 of 1</span>
+                <button type="button" class="btn btn-secondary" id="next-page" onclick="changePage(1)">
+                    Next →
+                </button>
             </div>
         </div>
     </div>
+
+    <!-- Permission Details Modal -->
+    <div id="permission-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Permission Details</h3>
+                <button type="button" class="btn-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Permission details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" id="edit-modal-btn" onclick="editFromModal()">
+                    ✏️ Edit Permission
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirm-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>⚠️ Confirm Action</h3>
+            </div>
+            <div class="modal-body">
+                <p id="confirm-message">Are you sure you want to perform this action?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeConfirmModal()">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirm-action-btn">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div id="message-container"></div>
 </div>
 
+<!-- Include Permission Files -->
 <script src="permissions.js"></script>
+<script src="permissionApiClient.js"></script>
+<script src="permission-management.js"></script>
 </body>
 </html>

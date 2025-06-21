@@ -303,13 +303,6 @@ async function loadDashboardData() {
 }
 
 function loadRecentActivities() {
-    const activities = [
-        { icon: 'fas fa-plus', text: 'New product added: Laptop Pro', time: '2 hours ago' },
-        { icon: 'fas fa-shopping-cart', text: 'Order #1234 completed', time: '4 hours ago' },
-        { icon: 'fas fa-user', text: 'New user registered: john_doe', time: '6 hours ago' },
-        { icon: 'fas fa-warehouse', text: 'Stock updated for Warehouse A', time: '8 hours ago' }
-    ];
-
     const activitiesContainer = document.getElementById('recentActivities');
     activitiesContainer.innerHTML = activities.map(activity => `
         <div class="activity-item">
