@@ -15,12 +15,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.CrossOrigin;
-
 @RestController
 @RequestMapping("/api/warehouses")
-@CrossOrigin(origins = "*")
 public class WarehouseController {
 
     private final WarehouseService warehouseService;
@@ -96,15 +92,59 @@ public class WarehouseController {
         return ResponseEntity.ok(products);
     }
 
-    @PostMapping(consumes = {MediaType.APPLICATION_JSON_VALUE, "application/json;charset=UTF-8"})
-    public ResponseEntity<WarehouseDTO> createWarehouse(@RequestBody Warehouse warehouse) {
+    // Modified to accept form data instead of JSON
+    @PostMapping(consumes = "application/x-www-form-urlencoded")
+    public ResponseEntity<WarehouseDTO> createWarehouse(
+            @RequestParam String name,
+            @RequestParam String location,
+            @RequestParam(required = false) String address,
+            @RequestParam(required = false) Double capacity) {
+
+        Warehouse warehouse = new Warehouse();
+        warehouse.setName(name);
+        warehouse.setLocation(location);
+        warehouse.setAddress(address);
+        warehouse.setCapacity(capacity);
+
         Warehouse createdWarehouse = warehouseService.save(warehouse);
         return new ResponseEntity<>(convertToDTO(createdWarehouse), HttpStatus.CREATED);
     }
 
+    // Alternative POST method that still accepts JSON (if needed)
+    @PostMapping(consumes = "application/json")
+    public ResponseEntity<WarehouseDTO> createWarehouseJson(@RequestBody Warehouse warehouse) {
+        Warehouse createdWarehouse = warehouseService.save(warehouse);
+        return new ResponseEntity<>(convertToDTO(createdWarehouse), HttpStatus.CREATED);
+    }
 
-    @PutMapping(value = "/{id}", consumes = {MediaType.APPLICATION_JSON_VALUE, "application/json;charset=UTF-8"})
+    // Modified to accept form data instead of JSON
+    @PutMapping(value = "/{id}", consumes = "application/x-www-form-urlencoded")
     public ResponseEntity<WarehouseDTO> updateWarehouse(
+            @PathVariable Long id,
+            @RequestParam String name,
+            @RequestParam String location,
+            @RequestParam(required = false) String address,
+            @RequestParam(required = false) Double capacity) {
+
+        Optional<Warehouse> existingWarehouse = warehouseService.findById(id);
+        if (!existingWarehouse.isPresent()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Warehouse warehouse = new Warehouse();
+        warehouse.setId(id);
+        warehouse.setName(name);
+        warehouse.setLocation(location);
+        warehouse.setAddress(address);
+        warehouse.setCapacity(capacity);
+
+        Warehouse updatedWarehouse = warehouseService.save(warehouse);
+        return ResponseEntity.ok(convertToDTO(updatedWarehouse));
+    }
+
+    // Alternative PUT method that still accepts JSON (if needed)
+    @PutMapping(value = "/{id}", consumes = "application/json")
+    public ResponseEntity<WarehouseDTO> updateWarehouseJson(
             @PathVariable Long id,
             @RequestBody Warehouse warehouse) {
         Optional<Warehouse> existingWarehouse = warehouseService.findById(id);
