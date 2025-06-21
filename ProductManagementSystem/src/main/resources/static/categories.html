@@ -17,8 +17,12 @@
 
   <div class="content-area">
     <div class="toolbar">
-      <button onclick="showCreateCategoryModal()" class="btn btn-primary">Create Category</button>
-      <button onclick="refreshCategories()" class="btn btn-secondary">Refresh</button>
+      <button onclick="showCreateCategoryModal()" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Add New Category
+      </button>
+      <button onclick="refreshCategories()" class="btn btn-secondary">
+        <i class="fas fa-sync-alt"></i> Refresh
+      </button>
       <div class="search-box">
         <input type="text" id="categorySearch" placeholder="Search categories..." onkeyup="filterCategories()">
       </div>
@@ -60,8 +64,12 @@
         <textarea id="categoryDescription" name="description" rows="4"></textarea>
       </div>
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary">Save</button>
-        <button type="button" onclick="closeCategoryModal()" class="btn btn-secondary">Cancel</button>
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save"></i> Save
+        </button>
+        <button type="button" onclick="closeCategoryModal()" class="btn btn-secondary">
+          <i class="fas fa-times"></i> Cancel
+        </button>
       </div>
     </form>
   </div>

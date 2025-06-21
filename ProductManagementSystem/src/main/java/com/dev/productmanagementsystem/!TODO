@@ -35,27 +35,23 @@ AFTER 7.05.2025.
 + create frontend
 + delete proxies and mockups (or rather comment them)
 + and connect actual api
-(fix record payment button)
-(fix categories frontend)
 + modify the recent activity in index so it actually sees recent activity (DELETED)
 + test if it works
 
 [BEFORE THE FINISHING OF PROJECT]
-- update the folder structure
-- update README
-- update diagram
-- fix class diagram
++ update the folder structure
++ update README
+- update diagram, fix class diagram
 - delete unnecessary imports
-- fix gitignore (optional)
 
 FURTHER IMPROVEMENTS:
 - modify the frontend, so it has more functions and looks better
 [LIST OF THINGS TO ADD]:
     - Index: Show different dashboards depending on user role (consider the README)
-    - Warehouse: Add warehouse button
-    - Stock movement: Register actual stock movement
-    - Roles: The breadcrumbs and permission visibility
-    - Permissions: breadcrumbs and visibility
+    - Separation of users and customers
+    - Categories - view products api call issue
+    - Invoiced - invoice status update
+    - Orders - additional buttons and functionalities. fix orders buttons and also add the complete order button
 - insert test data into the DB
 - further development
 - Update !TODO

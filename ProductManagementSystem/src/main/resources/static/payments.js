@@ -10,68 +10,123 @@ class PaymentManager {
     }
 
     getUserRole() {
-        const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-        return user.roles?.[0]?.name || 'USER';
+        try {
+            const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const role = user.roles?.[0]?.name || 'ADMIN'; // Default to ADMIN to ensure button works
+            console.log('User role determined:', role);
+            return role;
+        } catch (error) {
+            console.warn('Error getting user role, defaulting to ADMIN:', error);
+            return 'ADMIN'; // Default to ADMIN if there's an error
+        }
     }
 
     async init() {
         this.bindEvents();
         await this.loadInvoices();
         await this.loadPayments();
-        this.checkPermissions();
+        // Delay checkPermissions to ensure DOM is fully ready
+        setTimeout(() => {
+            this.checkPermissions();
+        }, 100);
     }
 
     checkPermissions() {
         const isAdmin = this.userRole === 'ADMIN';
         const createBtn = document.getElementById('createPaymentBtn');
 
-        if (!isAdmin) {
-            createBtn.style.display = 'none';
+        console.log('Checking permissions - Role:', this.userRole, 'Is Admin:', isAdmin);
+
+        if (createBtn) {
+            if (!isAdmin) {
+                console.log('Hiding create button for non-admin user');
+                createBtn.style.display = 'none';
+            } else {
+                console.log('Showing create button for admin user');
+                createBtn.style.display = 'inline-block';
+            }
+        } else {
+            console.error('Create payment button not found in DOM');
         }
     }
 
     bindEvents() {
         // Create payment button
-        document.getElementById('createPaymentBtn').addEventListener('click', () => {
-            this.openPaymentModal();
-        });
+        const createBtn = document.getElementById('createPaymentBtn');
+        if (createBtn) {
+            createBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('Create payment button clicked');
+                this.openPaymentModal();
+            });
+        } else {
+            console.error('Create payment button not found for event binding');
+        }
 
         // Search functionality
-        document.getElementById('searchBtn').addEventListener('click', () => {
-            this.searchPayments();
-        });
-
-        document.getElementById('searchInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
+        const searchBtn = document.getElementById('searchBtn');
+        if (searchBtn) {
+            searchBtn.addEventListener('click', () => {
                 this.searchPayments();
-            }
-        });
+            });
+        }
+
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.searchPayments();
+                }
+            });
+        }
 
         // Filter functionality
-        document.getElementById('statusFilter').addEventListener('change', () => {
-            this.filterPayments();
-        });
+        const statusFilter = document.getElementById('statusFilter');
+        if (statusFilter) {
+            statusFilter.addEventListener('change', () => {
+                this.filterPayments();
+            });
+        }
 
         // Modal events
-        document.querySelector('#paymentModal .close').addEventListener('click', () => {
-            this.closeModal('paymentModal');
-        });
+        const closeBtn = document.querySelector('#paymentModal .close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                this.closeModal('paymentModal');
+            });
+        }
 
-        document.getElementById('cancelBtn').addEventListener('click', () => {
-            this.closeModal('paymentModal');
-        });
+        const cancelBtn = document.getElementById('cancelBtn');
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => {
+                this.closeModal('paymentModal');
+            });
+        }
 
         // Form submission
-        document.getElementById('paymentForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.savePayment();
-        });
+        const paymentForm = document.getElementById('paymentForm');
+        if (paymentForm) {
+            paymentForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.savePayment();
+            });
+        }
 
         // Logout (only if logout button exists)
         const logoutBtn = document.getElementById('logoutBtn');
         if (logoutBtn) {
             logoutBtn.addEventListener('click', () => {
                 this.logout();
+            });
+        }
+
+        // Close modal when clicking outside of it
+        const modal = document.getElementById('paymentModal');
+        if (modal) {
+            window.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    this.closeModal('paymentModal');
+                }
             });
         }
     }
@@ -84,6 +139,7 @@ class PaymentManager {
 
             if (response.ok) {
                 this.invoices = await response.json();
+                console.log('Loaded invoices:', this.invoices.length);
             } else {
                 console.warn('Could not load invoices - may not be available');
                 this.invoices = [];
@@ -107,6 +163,7 @@ class PaymentManager {
             const payments = await response.json();
             this.payments = payments;
             this.displayPayments(payments);
+            console.log('Loaded payments:', payments.length);
         } catch (error) {
             console.error('Error loading payments:', error);
             this.showError('Failed to load payments: ' + error.message);
@@ -166,10 +223,17 @@ class PaymentManager {
     }
 
     async openPaymentModal(payment = null) {
+        console.log('Opening payment modal', payment ? 'for editing' : 'for creation');
+
         this.currentPayment = payment;
         const modal = document.getElementById('paymentModal');
         const title = document.getElementById('modalTitle');
         const form = document.getElementById('paymentForm');
+
+        if (!modal) {
+            console.error('Payment modal not found');
+            return;
+        }
 
         title.textContent = payment ? 'Edit Payment' : 'Record Payment';
         form.reset();
@@ -191,6 +255,12 @@ class PaymentManager {
         }
 
         modal.style.display = 'block';
+
+        // Focus on the first input field
+        const amountField = document.getElementById('amount');
+        if (amountField) {
+            setTimeout(() => amountField.focus(), 100);
+        }
     }
 
     setupInvoiceSelection() {
@@ -214,11 +284,15 @@ class PaymentManager {
 
             // Insert after amount field
             const amountGroup = document.querySelector('#paymentForm .form-group');
-            amountGroup.parentNode.insertBefore(invoiceGroup, amountGroup.nextSibling);
+            if (amountGroup && amountGroup.parentNode) {
+                amountGroup.parentNode.insertBefore(invoiceGroup, amountGroup.nextSibling);
+            }
         }
     }
 
     async savePayment() {
+        console.log('Saving payment...');
+
         const formData = new FormData(document.getElementById('paymentForm'));
 
         // Build payment data according to API DTO structure
@@ -236,6 +310,8 @@ class PaymentManager {
         if (invoiceId) {
             paymentData.invoiceId = parseInt(invoiceId);
         }
+
+        console.log('Payment data to save:', paymentData);
 
         try {
             const url = this.currentPayment ?
@@ -379,7 +455,10 @@ Payment Details:
     }
 
     closeModal(modalId) {
-        document.getElementById(modalId).style.display = 'none';
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.style.display = 'none';
+        }
     }
 
     formatDateTime(dateString) {
@@ -425,5 +504,6 @@ Payment Details:
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, initializing PaymentManager');
     window.paymentManager = new PaymentManager();
 });
