@@ -62,19 +62,13 @@ products-management-system/
 │   │   │   └── com/
 │   │   │       └── pms/
 │   │   │           ├── ProductsManagementSystemApplication.java
-│   │   │           ├── config/
-│   │   │           ├── model/
-│   │   │           │   ├── entity/
-│   │   │           │   ├── enums/
-│   │   │           │   └── dto/
-│   │   │           ├── repository/
-│   │   │           ├── service/
-│   │   │           │   ├── interfaces/
-│   │   │           │   └── impl/
-│   │   │           ├── controller/
-│   │   │           ├── security/
-│   │   │           ├── exception/
-│   │   │           └── util/
+│   │   │           ├── entities/
+│   │   │           ├── enums/
+│   │   │           ├── dto/
+│   │   │           ├── repositories/
+│   │   │           ├── services/
+│   │   │           ├── controllers/
+│   │   │           └── exceptions/
 │   │   └── resources/
 │   │       ├── application.properties
 │   │       ├── data.sql
